@@ -1,4 +1,4 @@
-# 逆向样本（大体积 / 版权归原作者，不入库）
+# 逆向样本（体积大、版权归原作者，不入库）
 ref/**/binaries/
 ref/**/extract/
 *.exe
@@ -8,6 +8,7 @@ ref/**/extract/
 .venv/
 __pycache__/
 *.pyc
-*.idb
-*.i64
 .tmp/
+# 运行时日志
+debug.log
+probe.log

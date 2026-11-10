@@ -1,0 +1,36 @@
+{
+  "edge": {
+    "enabled": true,
+    "margin": 28,
+    "left": "brightness",
+    "right": "volume",
+    "top": "none",
+    "bottom": "none",
+    "step": 0.05,
+    "cooldownMs": 30
+  },
+  "gesture": {
+    "enabled": true,
+    "button": 3,
+    "startDistance": 12,
+    "timeoutMs": 1500,
+    "traceColor": "#E47542",
+    "traceWidth": 3,
+    "failColor": "#CAD0D3",
+    "restoreClick": true,
+    "rectCw": "ocr",
+    "rectCcw": "stick",
+    "templateActions": {},
+    "sensitive": 50
+  },
+  "ocr": {
+    "pythonBin": "/home/username/AIWORK/项目-projects/gnome-edge-gesture/.venv/bin/python3",
+    "script": "/home/username/AIWORK/项目-projects/gnome-edge-gesture/backend/ocr_cli.py",
+    "copyText": true,
+    "lang": "chi_sim+eng"
+  },
+  "stick": {
+    "opacity": 240
+  },
+  "debug": false
+}

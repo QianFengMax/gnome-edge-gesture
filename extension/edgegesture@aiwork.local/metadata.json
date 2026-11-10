@@ -1,0 +1,10 @@
+{
+  "uuid": "edgegesture@aiwork.local",
+  "name": "Edge Gesture (AIWORK)",
+  "description": "屏幕边缘滚轮调节亮度/音量；右键画框逆时针=贴图、顺时针=OCR（复刻 MouseInc 行为）",
+  "shell-version": [
+    "49",
+    "50"
+  ],
+  "version": 1
+}
