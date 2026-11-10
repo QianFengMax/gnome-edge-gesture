@@ -89,7 +89,7 @@ export class VolumeControl {
         try {
             Main.osdWindowManager.showAll(gicon, null, level, Math.max(1, maxLevel));
         } catch (e) {
-            Log.log('音量 OSD 失败', e.message);
+            Log.warn('音量 OSD 失败', e.message);
         }
     }
 

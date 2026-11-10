@@ -75,3 +75,12 @@ export function loadConfig(extensionDir) {
 }
 
 export {DEFAULTS};
+
+/** 写日志用的环境摘要。 */
+export function envSummary() {
+    return {
+        shell: (typeof Main !== 'undefined' && Main.sessionMode?.currentMode) || 'unknown',
+        sessionType: GLib.getenv('XDG_SESSION_TYPE') ?? '?',
+        desktop: GLib.getenv('XDG_CURRENT_DESKTOP') ?? '?',
+    };
+}

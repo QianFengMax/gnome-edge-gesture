@@ -1,0 +1,20 @@
+[2026-11-11 07:01:01] [INFO] ═══ 启用 edgegesture 2.0-evdev ═══
+[2026-11-11 07:01:01] [INFO] 配置: /home/username/AIWORK/项目-projects/gnome-edge-gesture/.tmp/nested/data/gnome-shell/extensions/edgegesture@aiwork.local/config.json debug=true
+[2026-11-11 07:01:01] [INFO] 环境: session=wayland desktop=GNOME mode=unknown
+[2026-11-11 07:01:01] [INFO] 日志文件: /home/username/AIWORK/项目-projects/gnome-edge-gesture/.tmp/nested/data/gnome-shell/extensions/edgegesture@aiwork.local/logs/edgegesture.log
+[2026-11-11 07:01:01] [INFO] backlight 设备 ktz8866-backlight max=2047 writable=false type=raw
+[2026-11-11 07:01:01] [INFO] logind SetBrightness 可用
+[2026-11-11 07:01:01] [INFO] 边缘滚轮就绪 亮度后端=logind 音量=ok
+[2026-11-11 07:01:01] [INFO] 手势引擎就绪（evdev 事件驱动）
+[2026-11-11 07:01:01] [INFO] 监听 keyboard: keyd virtual keyboard (/dev/input/event3)
+[2026-11-11 07:01:01] [INFO] 监听 pointer: keyd virtual pointer (/dev/input/event4)
+[2026-11-11 07:01:01] [INFO] 监听 pointer: Xiaomi Focus Pen Mouse (/dev/input/event9)
+[2026-11-11 07:01:01] [INFO] 监听 keyboard: Xiaomi Keyboard (/dev/input/event12)
+[2026-11-11 07:01:01] [INFO] 监听 pointer: VXE R1SE+ Mouse (/dev/input/event16)
+[2026-11-11 07:01:01] [INFO] 监听 keyboard: VXE R1SE+ Keyboard (/dev/input/event17)
+[2026-11-11 07:01:01] [INFO] 指针设备: keyd virtual pointer, Xiaomi Focus Pen Mouse, VXE R1SE+ Mouse
+[2026-11-11 07:01:01] [INFO] 指针设备数: 3
+[2026-11-11 07:01:01] [INFO] 启动完成
+[2026-11-11 07:01:05] [DEBUG] 贴图尺寸 物理200x150 scale=1 逻辑200x150 显示200x150
+[2026-11-11 07:01:05] [INFO] 贴图创建 200x150 @400,300
+[2026-11-11 07:01:06] [INFO] 关闭贴图，剩 0

@@ -56,7 +56,7 @@ export class OcrRunner {
                     return;
                 }
                 if (!p.get_successful()) {
-                    Log.log('OCR 失败', stderr.slice(0, 300));
+                    Log.error('OCR 失败', stderr.slice(0, 300));
                     reject(new Error(stderr.trim() || 'OCR 进程失败'));
                     return;
                 }

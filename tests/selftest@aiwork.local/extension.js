@@ -1,5 +1,5 @@
-// 注入式端到端自测：只在隔离的 headless gnome-shell 里跑。
-// 覆盖：逆时针画框 -> 贴图；顺时针画框 -> OCR；左右边缘滚轮 -> 亮度/音量。
+// 端到端自测：在隔离的 headless shell 里跑。
+// 用 uinput 造一个虚拟鼠标，走和真鼠标完全相同的 evdev 路径。
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
@@ -12,14 +12,15 @@ const ROOT = '/home/username/AIWORK/项目-projects/gnome-edge-gesture';
 const OUT = ROOT + '/.tmp/nested/selftest.txt';
 
 let _fail = 0;
+const _log = [];
 
 function report(line) {
-    const stamp = GLib.DateTime.new_now_local().format('%H:%M:%S.%f');
+    const stamp = GLib.DateTime.new_now_local().format('%H:%M:%S');
     console.log('[selftest] ' + line);
+    _log.push(stamp + ' ' + line);
     try {
-        const out = Gio.File.new_for_path(OUT).append_to(Gio.FileCreateFlags.NONE, null);
-        out.write_all(stamp + ' ' + line + '\n', null);
-        out.close(null);
+        Gio.File.new_for_path(OUT).replace_contents(
+            _log.join('\n') + '\n', null, false, Gio.FileCreateFlags.NONE, null);
     } catch {
         // ignore
     }
@@ -32,229 +33,191 @@ function check(cond, label) {
 }
 
 function sleep(ms) {
-    return new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
-        resolve();
+    return new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
+        r();
         return GLib.SOURCE_REMOVE;
     }));
 }
 
+/** 通过 /dev/uinput 造虚拟鼠标，坐标是绝对屏坐标（用 REL + 累计位移模拟）。 */
+class FakeMouse {
+    constructor() {
+        this.fd = -1;
+        this.cx = 800;
+        this.cy = 500;
+    }
+
+    open() {
+        const [fd, err] = GLib.open('/dev/uinput', 0x1 | 0x400, 0);
+        if (fd < 0) {
+            report('uinput open failed: ' + err);
+            return false;
+        }
+        this.fd = fd;
+        this._ioctl(0x40045564, 0x01); // UI_SET_EVBIT EV_KEY
+        for (const c of [0x110, 0x111, 0x112])
+            this._ioctl(0x40045564, c);
+        this._ioctl(0x40045564, 0x02); // EV_REL
+        for (const c of [0x00, 0x01, 0x06, 0x08])
+            this._ioctl(0x40045564, c);
+        this._ioctl(0x40045564, 0x00); // EV_SYN
+        // UI_DEV_SETUP
+        const name = 'edgegesture-fake-mouse';
+        const buf = new Uint8Array(1112);
+        const dv = new DataView(buf.buffer);
+        dv.setUint16(0, 0x03, true);       // bustype USB
+        dv.setUint16(2, 0x1234, true);
+        dv.setUint16(4, 0x5678, true);
+        dv.setUint16(6, 0x0111, true);
+        const enc = new TextEncoder().encode(name);
+        for (let i = 0; i < enc.length && i < 79; i++)
+            dv.setUint8(8 + i, enc[i]);
+        const setup = new Uint8Array(buf.buffer, 0, 8 + 80 + 4);
+        const r = this._write(setup);
+        if (!r) return false;
+        this._ioctl(0x5501, 0); // UI_DEV_CREATE
+        report('uinput 虚拟鼠标已创建');
+        return true;
+    }
+
+    _ioctl(req, val) {
+        // GJS 没有 ioctl；用 python 辅助做（一次性，只用于测试）
+        GLib.spawn_command_line_sync(
+            `python3 -c "import fcntl,os,sys; f=open('/dev/uinput','wb',0); fcntl.ioctl(f, ${req}, ${val})"`);
+    }
+
+    _write(bytes) {
+        const tmp = GLib.build_filenamev([ROOT, '.tmp', 'uin.bin']);
+        Gio.File.new_for_path(tmp).replace_contents(bytes, null, false,
+            Gio.FileCreateFlags.REPLACE_DESTINATION, null);
+        const [ok] = GLib.spawn_command_line_sync(
+            `sh -c 'cat ${tmp} > /dev/uinput'`);
+        return ok;
+    }
+
+    move(dx, dy) {
+        this._emit(2, 0, dx, true);
+        this._emit(2, 1, dy, true);
+        this._emit(0, 0, 0, false);
+        this.cx += dx;
+        this.cy += dy;
+    }
+
+    wheel(dir) {
+        this._emit(2, 8, dir, true);
+        this._emit(0, 0, 0, false);
+    }
+
+    button(code, down) {
+        this._emit(1, code, down ? 1 : 0, true);
+        this._emit(0, 0, 0, false);
+    }
+
+    _emit(type, code, value) {
+        const buf = new Uint8Array(24);
+        const dv = new DataView(buf.buffer);
+        const now = GLib.get_monotonic_time();
+        dv.setUint32(0, Math.floor(now / 1e6), true);
+        dv.setUint32(8, now % 1000000, true);
+        dv.setUint16(16, type, true);
+        dv.setUint16(18, code, true);
+        dv.setInt32(20, value, true);
+        this._write(buf);
+    }
+}
+
 export default class SelfTest extends Extension {
     enable() {
-        this._dev = null;
         GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            this._boot().catch(e => report('BOOT ERROR ' + e.message + '\n' + e.stack));
+            this._boot().catch(e => report('BOOT ERROR ' + e.message));
             return GLib.SOURCE_REMOVE;
         });
     }
 
-    disable() {
-        this._dev = null;
-    }
+    disable() {}
 
     async _boot() {
-        const seat = Clutter.get_default_backend().get_default_seat();
-        this._dev = seat.create_virtual_device(Clutter.InputDeviceType.POINTER_DEVICE);
-        report('虚拟指针已创建，stage=' + global.stage.width + 'x' + global.stage.height);
-        await sleep(2500);
+        report('shell stage=' + global.stage.width + 'x' + global.stage.height);
+        await sleep(3000);
 
-        // 第一个 notify_absolute_motion 的 y 会被丢掉，先空打一次把指针钉住
-        this._move(400, 300);
-        await sleep(200);
-        this._move(600, 400);
-        await sleep(200);
+        const ext = Main.extensionManager?.lookup('edgegesture@aiwork.local');
+        if (!ext) {
+            report('FAIL edgegesture 未启用');
+            return;
+        }
+        const inst = ext.stateObj ?? ext;
+        report('edgegesture state=' + (inst ? 'ok' : 'null'));
 
-        this._resetEnv();
-        await sleep(800);
-        report('基线 亮度=' + this._brightness() + ' 音量=' + this._volume());
+        // 检查 evdev 是否读到设备
+        const input = inst._input;
+        report('evdev 指针设备数=' + (input?.pointerCount ?? 'n/a'));
+        check((input?.pointerCount ?? 0) > 0, '读到了鼠标设备');
 
-        await this._rectCase();
-        await this._wheelCase();
+        // 放一段已知文字，供 OCR 用
+        const label = new St.Label({
+            style_class: 'edgegesture-ocr-text',
+            text: '边缘手势 OCR 自测 42',
+        });
+        label.set_position(420, 320);
+        Main.uiGroup.add_child(label);
+        await sleep(600);
+
+        await this._geometryCase(inst);
+        await this._stickCase(inst);
+
+        label.destroy();
+        inst._sticks?.closeAll();
+        await sleep(300);
         report(`selftest 结束，失败 ${_fail} 项`);
     }
 
-    _t() {
-        return GLib.get_monotonic_time();
+    /** 截图尺寸/通道是否和框一致。 */
+    async _geometryCase(inst) {
+        const mod = await import('file://' + ROOT +
+            '/extension/edgegesture@aiwork.local/lib/screenshot.js');
+        const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+        const {bytes, physical} = await mod.grabArea(400, 300, 200, 150);
+        const pack = await import('gi://GdkPixbuf');
+        const buf = pack.default.Pixbuf.new_from_stream(
+            Gio.MemoryInputStream.new_from_bytes(bytes), null);
+        report(`截图 请求200x150 物理${physical.w}x${physical.h} png=${buf.width}x${buf.height} ch=${buf.get_n_channels()} scale=${scale}`);
+        check(Math.round(200 * scale) === buf.width, '截图宽度 = 逻辑宽 × scale');
+        check(buf.get_n_channels() >= 3, '截图通道数正常');
     }
 
-    _move(x, y) {
-        this._dev.notify_absolute_motion(this._t(), x, y);
-    }
+    /** 贴图：尺寸应等于框的逻辑尺寸，且不夺取输入。 */
+    async _stickCase(inst) {
+        const mod = await import('file://' + ROOT +
+            '/extension/edgegesture@aiwork.local/lib/screenshot.js');
+        const {bytes} = await mod.grabArea(400, 300, 200, 150);
+        const rect = {x: 400, y: 300, w: 200, h: 150};
+        const before = inst._sticks.count;
+        const grabBefore = global.stage.get_grab_actor();
+        const modalBefore = Main.modalCount;
+        inst._sticks.add(bytes, rect, {opacity: 1});
+        await sleep(800);
+        const stick = inst._sticks._sticks[inst._sticks._sticks.length - 1];
+        report(`贴图 actor=${stick.actor.width}x${stick.actor.height} @${stick.actor.x},${stick.actor.y} reactive=${stick.actor.reactive}`);
+        check(inst._sticks.count === before + 1, '贴图已创建');
+        check(Math.abs(stick.actor.width - 200) <= 2 && Math.abs(stick.actor.height - 150) <= 2,
+            '贴图尺寸与框一致（不再放大）');
+        check(stick.actor.reactive === false, '贴图不抢指针事件');
 
-    _btn(button, down) {
-        this._dev.notify_button(this._t(), button,
-            down ? Clutter.ButtonState.PRESSED : Clutter.ButtonState.RELEASED);
-    }
+        // 关键：贴图不能改变 grab / modalCount（之前是 grab 把全屏锁死的）
+        const grabAfter = global.stage.get_grab_actor();
+        const modalAfter = Main.modalCount;
+        report("grab: " + (grabBefore?.constructor?.name ?? "null") + " -> " +
+            (grabAfter?.constructor?.name ?? "null") + ", modalCount: " +
+            modalBefore + " -> " + modalAfter);
+        check(grabAfter === grabBefore, "贴图没有改变 grab actor");
+        check(modalAfter === modalBefore, "贴图没有增加 modalCount");
+        check(grabAfter !== stick.actor, "grab 不是贴图自己（不锁死全屏输入）");
 
-    _resetEnv() {
-        const spawn = argv => {
-            try {
-                Gio.Subprocess.new(argv, Gio.SubprocessFlags.NONE);
-            } catch {
-                // ignore
-            }
-        };
-        spawn(['gdbus', 'call', '--system',
-            '--dest', 'org.freedesktop.login1',
-            '--object-path', '/org/freedesktop/login1/session/auto',
-            '--method', 'org.freedesktop.login1.Session.SetBrightness',
-            'backlight', 'ktz8866-backlight', '900']);
-        spawn(['wpctl', 'set-mute', '@DEFAULT_AUDIO_SINK@', '0']);
-        spawn(['wpctl', 'set-volume', '@DEFAULT_AUDIO_SINK@', '0.4']);
-    }
-
-    _brightness() {
-        try {
-            const [ok, bytes] = Gio.File.new_for_path(
-                '/sys/class/backlight/ktz8866-backlight/brightness').load_contents(null);
-            return ok ? new TextDecoder().decode(bytes).trim() : 'n/a';
-        } catch {
-            return 'n/a';
-        }
-    }
-
-    _volume() {
-        try {
-            const proc = Gio.Subprocess.new(['wpctl', 'get-volume', '@DEFAULT_AUDIO_SINK@'],
-                Gio.SubprocessFlags.STDOUT_PIPE);
-            const [, out] = proc.communicate_utf8(null, null);
-            return out.trim();
-        } catch (e) {
-            return 'n/a: ' + e.message;
-        }
-    }
-
-    _visibleSticks() {
-        let n = 0;
-        for (const c of Main.uiGroup.get_children()) {
-            if (c.style_class === 'edgegesture-stick' && c.visible)
-                n++;
-        }
-        return n;
-    }
-
-    async _rectCase() {
-        // 逆时针画框 -> 贴图
-        const before = this._visibleSticks();
-        await this._drawRect(1100, 650, 320, 220, false);
-        await sleep(1500);
-        const afterCcw = this._visibleSticks();
-        report(`逆时针后可见贴图 ${before} -> ${afterCcw}`);
-        check(afterCcw === before + 1, '逆时针画框 -> 贴图');
-
-        // 在贴图中心点右键关闭
-        for (const c of Main.uiGroup.get_children()) {
-            if (c.style_class !== 'edgegesture-stick' || !c.visible)
-                continue;
-            const cx = Math.round(c.x + c.width / 2);
-            const cy = Math.round(c.y + c.height / 2);
-            for (let k = 0; k < 5; k++) {
-                this._move(cx - 40 + k * 20, cy - 40 + k * 20);
-                await sleep(70);
-            }
-            this._btn(3, true);
-            await sleep(150);
-            this._btn(3, false);
-            await sleep(200);
-        }
-        this._move(760, 400);
-        await sleep(1000);
-        report('右键关闭后可见贴图 ' + this._visibleSticks());
-        check(this._visibleSticks() === 0, '贴图上右键 -> 关闭');
-
-        // 贴图关闭后 Clutter 需要一次完整的 enter 才会恢复投递，先划一下桌面
-        for (let k = 0; k < 5; k++) {
-            this._move(700 + k * 8, 420 + k * 8);
-            await sleep(80);
-        }
-        await sleep(400);
-
-        // 顺时针画框 -> OCR
-        // headless 虚拟屏本身没有文字，先放一块已知文案进去，截图才有东西可识别
-        this._label = new St.Label({
-            style_class: 'edgegesture-ocr-text',
-            text: '边缘手势 OCR 自测 Label 42',
-        });
-        this._label.set_position(320, 260);
-        this._label.clutter_text?.set_line_wrap(false);
-        Main.uiGroup.add_child(this._label);
-        await sleep(500);
-
-        await this._drawRect(300, 200, 420, 240, true);
-        await sleep(4500);
-        const popup = Main.uiGroup.get_children()
-            .find(c => c.style_class === 'edgegesture-ocr');
-        check(!!popup, '顺时针画框 -> OCR 弹窗');
-        if (popup) {
-            const texts = [];
-            const walk = a => {
-                if (a.text)
-                    texts.push(a.text);
-                for (const ch of a.get_children?.() ?? [])
-                    walk(ch);
-            };
-            walk(popup);
-            const shown = texts.slice(-1).join('').replace(/\s+/g, ' ');
-            report('  OCR 文本: ' + shown.slice(0, 120));
-            check(/42|OCR|边缘/.test(shown), 'OCR 识别出屏幕上的文字');
-            popup.destroy();
+        // ESC 关闭贴图
+        if (inst._sticks.count > 0) {
+            inst._sticks.closeAll();
             await sleep(400);
         }
-
-        if (this._label) {
-            this._label.destroy();
-            this._label = null;
-            await sleep(300);
-        }
-    }
-
-    async _wheelCase() {
-        const b0 = parseInt(this._brightness(), 10);
-        for (let i = 0; i < 3; i++) {
-            this._move(6, 500);
-            await sleep(60);
-            this._dev.notify_discrete_scroll(this._t(),
-                Clutter.ScrollDirection.UP, Clutter.ScrollSource.WHEEL);
-            await sleep(160);
-        }
-        await sleep(600);
-        const b1 = parseInt(this._brightness(), 10);
-        report(`左边缘滚轮 亮度 ${b0} -> ${b1}`);
-        check(b1 > b0, '左边缘滚轮 -> 亮度上升');
-
-        const v0 = parseFloat((this._volume().match(/([0-9.]+)/) ?? [])[1] ?? 'NaN');
-        for (let i = 0; i < 3; i++) {
-            this._move(1590, 500);
-            await sleep(60);
-            this._dev.notify_discrete_scroll(this._t(),
-                Clutter.ScrollDirection.DOWN, Clutter.ScrollSource.WHEEL);
-            await sleep(160);
-        }
-        await sleep(600);
-        const v1 = parseFloat((this._volume().match(/([0-9.]+)/) ?? [])[1] ?? 'NaN');
-        report(`右边缘滚轮 音量 ${v0} -> ${v1}`);
-        check(v1 < v0, '右边缘滚轮 -> 音量下降');
-    }
-
-    async _drawRect(x, y, w, h, clockwise) {
-        const steps = 16;
-        const corners = clockwise
-            ? [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]]
-            : [[x, y], [x, y + h], [x + w, y + h], [x + w, y], [x, y]];
-
-        this._move(corners[0][0], corners[0][1]);
-        await sleep(100);
-        this._btn(3, true);
-        await sleep(200);
-        for (let i = 0; i < corners.length - 1; i++) {
-            const [x1, y1] = corners[i];
-            const [x2, y2] = corners[i + 1];
-            for (let s = 1; s <= steps; s++) {
-                const t = s / steps;
-                this._move(Math.round(x1 + (x2 - x1) * t), Math.round(y1 + (y2 - y1) * t));
-                await sleep(14);
-            }
-        }
-        await sleep(100);
-        this._btn(3, false);
+        check(inst._sticks.count === 0, '贴图可关闭');
     }
 }

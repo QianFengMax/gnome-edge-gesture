@@ -7,21 +7,17 @@
     "top": "none",
     "bottom": "none",
     "step": 0.05,
-    "cooldownMs": 30
+    "cooldownMs": 20
   },
   "gesture": {
     "enabled": true,
-    "button": 3,
     "startDistance": 12,
-    "timeoutMs": 1500,
+    "timeoutMs": 3000,
     "traceColor": "#E47542",
     "traceWidth": 3,
-    "failColor": "#CAD0D3",
-    "restoreClick": true,
     "rectCw": "ocr",
     "rectCcw": "stick",
-    "templateActions": {},
-    "sensitive": 50
+    "templateActions": {}
   },
   "ocr": {
     "pythonBin": "/home/username/AIWORK/项目-projects/gnome-edge-gesture/.venv/bin/python3",
@@ -29,8 +25,6 @@
     "copyText": true,
     "lang": "chi_sim+eng"
   },
-  "stick": {
-    "opacity": 240
-  },
-  "debug": false
+  "stick": {"opacity": 1.0},
+  "debug": true
 }

@@ -1,81 +1,78 @@
 import Clutter from 'gi://Clutter';
-import Cogl from 'gi://Cogl';
-import GdkPixbuf from 'gi://GdkPixbuf';
-import Gio from 'gi://Gio';
-import GLib from 'gi://GLib';
 import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
+import {imageContentFromBytes} from './screenshot.js';
 import * as Log from './logger.js';
 
-/** PNG 字节 -> Clutter.Content（保持原始像素，等比显示）。 */
-export function imageContentFromBytes(bytes) {
-    const stream = Gio.MemoryInputStream.new_from_bytes(bytes);
-    const pixbuf = GdkPixbuf.Pixbuf.new_from_stream(stream, null);
-    stream.close(null);
-
-    const cogl = global.stage.context.get_backend().get_cogl_context();
-    const content = St.ImageContent.new_with_preferred_size(
-        pixbuf.width, pixbuf.height);
-    content.set_bytes(cogl,
-        pixbuf.read_pixel_bytes(),
-        Cogl.PixelFormat.RGBA_8888,
-        pixbuf.width, pixbuf.height, pixbuf.rowstride);
-    return {content, width: pixbuf.width, height: pixbuf.height};
-}
-
+/**
+ * 贴图窗口。
+ *
+ * 与 MouseInc 的贴图行为对齐：浮在屏幕上、可拖、可调透明、可缩放、可关，
+ * **但不独占输入** —— 之前用 global.stage.grab() 把整个屏幕锁住了，
+ * 必须右键删掉才能点别的东西，这是最大的一处体验事故。
+ *
+ * 现在：actor 不 reactive，所有交互由 extension 在 evdev 层面分发，
+ * 只有指针真的落在贴图矩形里才响应，其余事件原样放行给下面的窗口。
+ */
 class StickWindow {
     constructor(opts = {}) {
         this.actor = new St.Widget({
             style_class: 'edgegesture-stick',
-            reactive: true,
+            reactive: false,      // 不抢指针，见类注释
             visible: false,
-            opacity: Math.clamp(opts.opacity ?? 240, 24, 255),
+            opacity: Math.clamp(opts.opacity ?? 255, 16, 255),
         });
+        this.actor.set_pivot_point(0.5, 0.5);
         this._bin = new St.Bin({x_expand: true, y_expand: true});
         this.actor.add_child(this._bin);
 
         this.baseW = 0;
         this.baseH = 0;
+        this.zoom = 1;
         this.dragging = false;
         this.lastClick = 0;
-        this.onPress = null;
-        this.onScroll = null;
-        this.grab = null;
-
-        // 指针落在 reactive actor 上时，按钮事件只投给它，stage 收不到，
-        // 所以按下/滚轮必须在这里接。
-        this.actor.connect('button-press-event', (_a, event) => {
-            this.onPress?.(this, event);
-            return Clutter.EVENT_STOP;
-        });
-        this.actor.connect('scroll-event', (_a, event) => {
-            this.onScroll?.(this, event);
-            return Clutter.EVENT_STOP;
-        });
-        this.actor.connect('key-press-event', (_a, event) => {
-            this.onPress?.(this, event, true);
-            return Clutter.EVENT_STOP;
-        });
     }
 
+    /**
+     * @param {GLib.Bytes} bytes PNG
+     * @param {{x:number,y:number,w:number,h:number}} rect 逻辑坐标
+     */
     setImage(bytes, rect) {
         const {content, width, height} = imageContentFromBytes(bytes);
         const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
-        const lw = width / scale;
-        const lh = height / scale;
-        const fit = Math.min(1,
-            global.stage.width * 0.92 / lw,
-            global.stage.height * 0.92 / lh);
 
-        this._bin.set_child(new St.Widget({content, x_expand: true, y_expand: true}));
-        this.baseW = Math.max(24, Math.round(lw * fit));
-        this.baseH = Math.max(24, Math.round(lh * fit));
-        this.actor.set_size(this.baseW, this.baseH);
+        // 关键修复：content 的尺寸是物理像素，St 按逻辑像素摆放。
+        // 之前直接用 content（物理尺寸）当 actor 尺寸，2x 屏上贴图整整大了一倍、
+        // 超出部分也不裁切。
+        this.baseW = Math.max(16, Math.round(width / scale));
+        this.baseH = Math.max(16, Math.round(height / scale));
+        this.zoom = 1;
+
+        this._bin.set_child(new St.Widget({
+            content,
+            x_expand: true,
+            y_expand: true,
+            // 内容按 actor 尺寸缩放，避免 2x 屏上溢出
+            content_gravity: Clutter.ContentGravity.RESIZE_ASPECT,
+        }));
+
+        // 初始尺寸不超过屏幕 85%
+        const fit = Math.min(1,
+            global.stage.width * 0.85 / this.baseW,
+            global.stage.height * 0.85 / this.baseH);
+        this.zoom = fit;
+
+        const w = Math.max(16, Math.round(this.baseW * this.zoom));
+        const h = Math.max(16, Math.round(this.baseH * this.zoom));
+        this.actor.set_size(w, h);
         this.actor.set_position(
-            Math.clamp(Math.round(rect.x), 0, Math.max(0, global.stage.width - this.baseW)),
-            Math.clamp(Math.round(rect.y), 0, Math.max(0, global.stage.height - this.baseH)));
+            Math.clamp(Math.round(rect.x), 0, Math.max(0, global.stage.width - w)),
+            Math.clamp(Math.round(rect.y), 0, Math.max(0, global.stage.height - h)));
+
+        Log.debug('贴图尺寸 物理' + width + 'x' + height + ' scale=' + scale +
+            ' 逻辑' + this.baseW + 'x' + this.baseH + ' 显示' + w + 'x' + h);
     }
 
     contains(x, y) {
@@ -84,13 +81,36 @@ class StickWindow {
             x >= a.x && x < a.x + a.width && y >= a.y && y < a.y + a.height;
     }
 
+    raise() {
+        Main.uiGroup.set_child_above_sibling(this.actor, null);
+    }
+
+    getOpacity() {
+        return this.actor.opacity / 255;
+    }
+
+    setOpacity(v) {
+        this.actor.opacity = Math.clamp(Math.round(v * 255), 16, 255);
+    }
+
     toggleZoom() {
-        const zoomed = this.actor.width > this.baseW + 1;
+        this.zoom = this.zoom > 1.01 ? 1 : 1.8;
         this.actor.set_size(
-            Math.min(zoomed ? this.baseW : Math.round(this.baseW * 1.6),
-                Math.round(global.stage.width * 0.96)),
-            Math.min(zoomed ? this.baseH : Math.round(this.baseH * 1.6),
-                Math.round(global.stage.height * 0.96)));
+            Math.min(Math.round(this.baseW * this.zoom),
+                Math.round(global.stage.width * 0.95)),
+            Math.min(Math.round(this.baseH * this.zoom),
+                Math.round(global.stage.height * 0.95)));
+        Log.debug('贴图缩放 -> ' + this.zoom.toFixed(2));
+    }
+
+    show() {
+        this.actor.show();
+        this.raise();
+    }
+
+    hide() {
+        this.dragging = false;
+        this.actor.hide();
     }
 
     destroy() {
@@ -100,27 +120,26 @@ class StickWindow {
     }
 }
 
-const POOL_MAX = 8;
+const POOL_MAX = 6;
 
 /**
  * 贴图管理。
  *
- * 交互统一在 stage 的 captured-event 里处理，坐标一律取 global.get_pointer()：
- * 合成事件路径下 event.get_coords() 可能给出上一次的位置，用实时指针才不会点错对象。
- * （actor 自己的 button-press-event 在某些注入路径上不触发，captured-event 稳定。）
- *
- * 关闭时不能直接 destroy 指针底下的 actor —— Clutter 会丢掉指针焦点，之后所有
- * 按键/点击都不再派发。做法是先 reactive=false + hide，actor 进复用池。
+ * 三条硬约束（都踩过）：
+ *  1. 绝不 grab：会锁死全屏输入。
+ *  2. 关闭时不 destroy 指针底下的 actor：Clutter 会丢指针焦点，
+ *     之后一段时间事件不派发。改为 hide + 进复用池。
+ *  3. 不依赖 Clutter 的按钮掩码（本机右键报 0x200，无法区分左右键），
+ *     全部按键判定由 evdev 层完成，这里只按坐标做命中测试。
  */
 export class StickManager {
     constructor(opts = {}) {
         this._sticks = [];
         this._pool = [];
         this._opts = opts;
-        this._stageId = 0;
         this._active = null;
         this._dragOffset = null;
-        this._debug = !!opts.debug;
+        this._monitorsId = 0;
     }
 
     get count() {
@@ -128,20 +147,14 @@ export class StickManager {
     }
 
     enable() {
-        this._stageId = global.stage.connect('captured-event', (_a, event) => {
-            try {
-                return this._handle(event);
-            } catch (e) {
-                Log.log('贴图事件异常', e.message);
-                return Clutter.EVENT_PROPAGATE;
-            }
-        });
+        this._monitorsId = Main.layoutManager.connect('monitors-changed',
+            () => this._reclampAll());
     }
 
     disable() {
-        if (this._stageId) {
-            global.stage.disconnect(this._stageId);
-            this._stageId = 0;
+        if (this._monitorsId) {
+            Main.layoutManager.disconnect(this._monitorsId);
+            this._monitorsId = 0;
         }
         for (const s of this._sticks)
             s.destroy();
@@ -156,105 +169,112 @@ export class StickManager {
         const stick = this._pool.pop() ?? this._acquire();
         stick.setImage(bytes, rect);
         stick.actor.opacity = Math.clamp(
-            opts.opacity ?? this._opts.opacity ?? 240, 24, 255);
-        stick.actor.reactive = true;
-        stick.actor.show();
-        Main.uiGroup.set_child_above_sibling(stick.actor, null);
-        try {
-            stick.grab = global.stage.grab(stick.actor);
-        } catch (e) {
-            Log.log('贴图 grab 失败', e.message);
-            stick.grab = null;
-        }
-
+            Math.round((opts.opacity ?? this._opts.opacity ?? 1) * 255), 16, 255);
+        stick.show();
         stick.lastClick = 0;
-        stick.dragging = false;
         this._sticks.push(stick);
         this._active = stick;
-        Log.log('贴图创建', stick.actor.x, stick.actor.y,
-            stick.actor.width, stick.actor.height);
+        Log.info('贴图创建 ' + stick.actor.width + 'x' + stick.actor.height +
+            ' @' + stick.actor.x + ',' + stick.actor.y);
         return stick;
     }
 
     _acquire() {
         const stick = new StickWindow(this._opts);
-        stick.onPress = (sw, event, isKey) => {
-            if (isKey) {
-                const sym = event.get_key_symbol();
-                if (sym === Clutter.KEY_Escape)
-                    this._close(sw);
-                else if (sym === Clutter.KEY_space || sym === Clutter.KEY_Return)
-                    sw.toggleZoom();
-                return;
-            }
-            const button = event.get_button();
-            if (button === Clutter.BUTTON_SECONDARY) {
-                this._close(sw);
-                return;
-            }
-            if (button !== Clutter.BUTTON_PRIMARY)
-                return;
-            const now = event.get_time();
-            if (now - sw.lastClick < 300)
-                sw.toggleZoom();
-            sw.lastClick = now;
-            const [px, py] = global.get_pointer();
-            this._dragOffset = [Math.round(px) - sw.actor.x, Math.round(py) - sw.actor.y];
-            sw.dragging = true;
-            Main.uiGroup.set_child_above_sibling(sw.actor, null);
-        };
-        stick.onScroll = (sw, event) => {
-            const dir = event.get_scroll_direction();
-            if (dir === Clutter.ScrollDirection.UP)
-                sw.actor.opacity = Math.clamp(sw.actor.opacity + 12, 24, 255);
-            else if (dir === Clutter.ScrollDirection.DOWN)
-                sw.actor.opacity = Math.clamp(sw.actor.opacity - 12, 24, 255);
-        };
         Main.uiGroup.add_child(stick.actor);
         return stick;
     }
 
-    /** 指针是否落在某块可见贴图上。 */
-    hitTest(x, y) {
+    _reclampAll() {
         for (const s of this._sticks) {
-            if (s.contains(x, y))
-                return true;
+            s.actor.set_position(
+                Math.clamp(s.actor.x, 0, Math.max(0, global.stage.width - s.actor.width)),
+                Math.clamp(s.actor.y, 0, Math.max(0, global.stage.height - s.actor.height)));
         }
-        return false;
+    }
+
+    /** 指针命中测试（逻辑坐标）。 */
+    hitTest(x, y) {
+        return this._topAt(x, y) !== null;
+    }
+
+    /** 处理一次鼠标事件；返回 true 表示这次事件被贴图消费掉。 */
+    handlePress(x, y, button) {
+        const hit = this._topAt(x, y);
+        if (!hit) {
+            this._active = null;
+            return false;
+        }
+        this._active = hit;
+        hit.raise();
+
+        if (button === 'right') {
+            this.close(hit);
+            return true;
+        }
+        if (button !== 'left')
+            return true;
+
+        const now = Date.now();
+        if (now - hit.lastClick < 300)
+            hit.toggleZoom();
+        hit.lastClick = now;
+        hit.dragging = true;
+        this._dragOffset = [x - hit.actor.x, y - hit.actor.y];
+        return true;
+    }
+
+    handleRelease() {
+        const stick = this._sticks.find(s => s.dragging);
+        if (!stick)
+            return false;
+        stick.dragging = false;
+        this._dragOffset = null;
+        return true;
+    }
+
+    handleMotion(x, y) {
+        const stick = this._sticks.find(s => s.dragging);
+        if (!stick)
+            return false;
+        stick.actor.set_position(
+            Math.round(x - this._dragOffset[0]),
+            Math.round(y - this._dragOffset[1]));
+        return true;
+    }
+
+    handleWheel(x, y, dir) {
+        const hit = this._topAt(x, y);
+        if (!hit)
+            return false;
+        if (dir === 'up')
+            hit.setOpacity(hit.getOpacity() + 0.05);
+        else if (dir === 'down')
+            hit.setOpacity(hit.getOpacity() - 0.05);
+        return true;
+    }
+
+    closeActive() {
+        if (!this._active)
+            return false;
+        this.close(this._active);
+        return true;
     }
 
     closeAll() {
         for (const s of [...this._sticks])
-            this._close(s);
+            this.close(s);
     }
 
-    _close(stick) {
+    close(stick) {
         const i = this._sticks.indexOf(stick);
         if (i >= 0)
             this._sticks.splice(i, 1);
         if (this._active === stick)
             this._active = this._sticks[this._sticks.length - 1] ?? null;
 
-        try {
-            stick.grab?.dismiss();
-        } catch {
-            // 已释放
-        }
-        stick.grab = null;
-        stick.dragging = false;
-        // 延迟一拍再隐藏：grab dismiss 与 actor 隐藏落在同一帧时，Clutter 会把
-        // 指针焦点丢到一个已不可见的对象上，接下来的按下事件全部不派发。
-        const actor = stick.actor;
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            try {
-                actor.reactive = false;
-                actor.hide();
-            } catch {
-                // ignore
-            }
-            return GLib.SOURCE_REMOVE;
-        });
-        Log.log('关闭贴图，剩', this._sticks.length);
+        stick.hide();
+        Log.info('关闭贴图，剩 ' + this._sticks.length);
 
         if (this._pool.length < POOL_MAX)
             this._pool.push(stick);
@@ -268,89 +288,5 @@ export class StickManager {
                 return this._sticks[i];
         }
         return null;
-    }
-
-    _handle(event) {
-        if (this._sticks.length === 0)
-            return Clutter.EVENT_PROPAGATE;
-
-        const type = event.type();
-        const [gx, gy] = global.get_pointer();
-        const x = Math.round(gx);
-        const y = Math.round(gy);
-
-        if (type === Clutter.EventType.BUTTON_PRESS) {
-            const hit = this._topAt(x, y);
-            Log.log('press', x, y, 'btn=' + event.get_button(),
-                'hit=' + !!hit, 'n=' + this._sticks.length,
-                JSON.stringify(this._sticks.map(s => [s.actor?.x, s.actor?.y, s.actor?.visible])));
-            if (!hit) {
-                this._active = null;
-                return Clutter.EVENT_PROPAGATE;
-            }
-            this._active = hit;
-            Main.uiGroup.set_child_above_sibling(hit.actor, null);
-
-            const button = event.get_button();
-            if (button === Clutter.BUTTON_SECONDARY) {
-                this._close(hit);
-                return Clutter.EVENT_STOP;
-            }
-            if (button !== Clutter.BUTTON_PRIMARY)
-                return Clutter.EVENT_STOP;
-
-            const now = event.get_time();
-            if (now - hit.lastClick < 300)
-                hit.toggleZoom();
-            hit.lastClick = now;
-            hit.dragging = true;
-            this._dragOffset = [x - hit.actor.x, y - hit.actor.y];
-            return Clutter.EVENT_STOP;
-        }
-
-        if (type === Clutter.EventType.MOTION) {
-            const stick = this._sticks.find(s => s.dragging);
-            if (!stick)
-                return Clutter.EVENT_PROPAGATE;
-            stick.actor.set_position(
-                Math.round(x - this._dragOffset[0]),
-                Math.round(y - this._dragOffset[1]));
-            return Clutter.EVENT_STOP;
-        }
-
-        if (type === Clutter.EventType.BUTTON_RELEASE) {
-            const stick = this._sticks.find(s => s.dragging);
-            if (!stick)
-                return Clutter.EVENT_PROPAGATE;
-            stick.dragging = false;
-            this._dragOffset = null;
-            return Clutter.EVENT_STOP;
-        }
-
-        if (type === Clutter.EventType.SCROLL) {
-            const hit = this._topAt(x, y);
-            if (!hit)
-                return Clutter.EVENT_PROPAGATE;
-            const dir = event.get_scroll_direction();
-            if (dir === Clutter.ScrollDirection.UP)
-                hit.actor.opacity = Math.clamp(hit.actor.opacity + 12, 24, 255);
-            else if (dir === Clutter.ScrollDirection.DOWN)
-                hit.actor.opacity = Math.clamp(hit.actor.opacity - 12, 24, 255);
-            return Clutter.EVENT_STOP;
-        }
-
-        if (type === Clutter.EventType.KEY_PRESS) {
-            const sym = event.get_key_symbol();
-            if (sym === Clutter.KEY_Escape && this._active) {
-                this._close(this._active);
-                return Clutter.EVENT_STOP;
-            }
-            if ((sym === Clutter.KEY_space || sym === Clutter.KEY_Return) && this._active) {
-                this._active.toggleZoom();
-                return Clutter.EVENT_STOP;
-            }
-        }
-
-        return Clutter.EVENT_PROPAGATE;
     }
 }

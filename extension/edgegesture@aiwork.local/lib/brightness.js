@@ -73,7 +73,7 @@ export class BrightnessControl {
             BrightnessControl._writeRaw(d, raw);
             return;
         }
-        Log.log('亮度后端不可用，跳过写入');
+        Log.info('亮度后端不可用，跳过写入');
     }
 
     nudge(delta) {
@@ -106,9 +106,9 @@ export class BrightnessControl {
                 Gio.DBusCallFlags.NONE, 800, null);
             this._logind = proxy;
             this._logindOk = true;
-            Log.log('logind SetBrightness 可用');
+            Log.info('logind SetBrightness 可用');
         } catch (e) {
-            Log.log('logind 不可用，继续尝试 sysfs', e.message);
+            Log.warn('logind 不可用，继续尝试 sysfs', e.message);
         }
     }
 
@@ -118,7 +118,7 @@ export class BrightnessControl {
                 new GLib.Variant('(ssu)', ['backlight', name, raw]),
                 Gio.DBusCallFlags.NONE, 800, null);
         } catch (e) {
-            Log.log('logind SetBrightness 失败，降级 sysfs', e.message);
+            Log.warn('logind SetBrightness 失败，降级 sysfs', e.message);
             this._logindOk = false;
             if (this._device?.writable)
                 BrightnessControl._writeRaw(this._device, raw);
@@ -130,7 +130,7 @@ export class BrightnessControl {
             Main.osdWindowManager.showAll(
                 Gio.ThemedIcon.new(OSD_ICON), null, level, 1.0);
         } catch (e) {
-            Log.log('OSD 失败', e.message);
+            Log.warn('OSD 失败', e.message);
         }
     }
 
@@ -161,11 +161,11 @@ export class BrightnessControl {
                 }
             }
         } catch (e) {
-            Log.log('枚举 backlight 失败', e.message);
+            Log.warn('枚举 backlight 失败', e.message);
         }
         if (best) {
             delete best.score;
-            Log.log('backlight 设备', best.name, 'max=' + best.max,
+            Log.info('backlight 设备', best.name, 'max=' + best.max,
                 'writable=' + best.writable, 'type=' + best.type);
         }
         return best;
@@ -203,7 +203,7 @@ export class BrightnessControl {
             Gio.File.new_for_path(`${d.base}/brightness`).replace_contents(
                 String(raw), null, false, Gio.FileCreateFlags.NONE, null);
         } catch (e) {
-            Log.log('sysfs 写入失败', e.message);
+            Log.warn('sysfs 写入失败', e.message);
         }
     }
 }
@@ -211,10 +211,10 @@ export class BrightnessControl {
 export function ensureManager() {
     try {
         if (!Main.brightnessManager)
-            Log.log('brightnessManager 尚未就绪，等待 shell 初始化');
+            Log.info('brightnessManager 尚未就绪，等待 shell 初始化');
         return Main.brightnessManager ?? null;
     } catch (e) {
-        Log.log('brightnessManager 访问失败', e.message);
+        Log.warn('brightnessManager 访问失败', e.message);
         return null;
     }
 }
