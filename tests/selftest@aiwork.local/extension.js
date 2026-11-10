@@ -1,14 +1,15 @@
-// 端到端自测：在隔离的 headless shell 里跑。
-// 用 uinput 造一个虚拟鼠标，走和真鼠标完全相同的 evdev 路径。
+// 端到端自测：在隔离的 headless shell 里跑（每次全新加载，不受模块缓存影响）。
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
+import GdkPixbuf from 'gi://GdkPixbuf';
 import St from 'gi://St';
 
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 const ROOT = '/home/username/AIWORK/项目-projects/gnome-edge-gesture';
+const EXT = ROOT + '/extension/edgegesture@aiwork.local';
 const OUT = ROOT + '/.tmp/nested/selftest.txt';
 
 let _fail = 0;
@@ -39,93 +40,6 @@ function sleep(ms) {
     }));
 }
 
-/** 通过 /dev/uinput 造虚拟鼠标，坐标是绝对屏坐标（用 REL + 累计位移模拟）。 */
-class FakeMouse {
-    constructor() {
-        this.fd = -1;
-        this.cx = 800;
-        this.cy = 500;
-    }
-
-    open() {
-        const [fd, err] = GLib.open('/dev/uinput', 0x1 | 0x400, 0);
-        if (fd < 0) {
-            report('uinput open failed: ' + err);
-            return false;
-        }
-        this.fd = fd;
-        this._ioctl(0x40045564, 0x01); // UI_SET_EVBIT EV_KEY
-        for (const c of [0x110, 0x111, 0x112])
-            this._ioctl(0x40045564, c);
-        this._ioctl(0x40045564, 0x02); // EV_REL
-        for (const c of [0x00, 0x01, 0x06, 0x08])
-            this._ioctl(0x40045564, c);
-        this._ioctl(0x40045564, 0x00); // EV_SYN
-        // UI_DEV_SETUP
-        const name = 'edgegesture-fake-mouse';
-        const buf = new Uint8Array(1112);
-        const dv = new DataView(buf.buffer);
-        dv.setUint16(0, 0x03, true);       // bustype USB
-        dv.setUint16(2, 0x1234, true);
-        dv.setUint16(4, 0x5678, true);
-        dv.setUint16(6, 0x0111, true);
-        const enc = new TextEncoder().encode(name);
-        for (let i = 0; i < enc.length && i < 79; i++)
-            dv.setUint8(8 + i, enc[i]);
-        const setup = new Uint8Array(buf.buffer, 0, 8 + 80 + 4);
-        const r = this._write(setup);
-        if (!r) return false;
-        this._ioctl(0x5501, 0); // UI_DEV_CREATE
-        report('uinput 虚拟鼠标已创建');
-        return true;
-    }
-
-    _ioctl(req, val) {
-        // GJS 没有 ioctl；用 python 辅助做（一次性，只用于测试）
-        GLib.spawn_command_line_sync(
-            `python3 -c "import fcntl,os,sys; f=open('/dev/uinput','wb',0); fcntl.ioctl(f, ${req}, ${val})"`);
-    }
-
-    _write(bytes) {
-        const tmp = GLib.build_filenamev([ROOT, '.tmp', 'uin.bin']);
-        Gio.File.new_for_path(tmp).replace_contents(bytes, null, false,
-            Gio.FileCreateFlags.REPLACE_DESTINATION, null);
-        const [ok] = GLib.spawn_command_line_sync(
-            `sh -c 'cat ${tmp} > /dev/uinput'`);
-        return ok;
-    }
-
-    move(dx, dy) {
-        this._emit(2, 0, dx, true);
-        this._emit(2, 1, dy, true);
-        this._emit(0, 0, 0, false);
-        this.cx += dx;
-        this.cy += dy;
-    }
-
-    wheel(dir) {
-        this._emit(2, 8, dir, true);
-        this._emit(0, 0, 0, false);
-    }
-
-    button(code, down) {
-        this._emit(1, code, down ? 1 : 0, true);
-        this._emit(0, 0, 0, false);
-    }
-
-    _emit(type, code, value) {
-        const buf = new Uint8Array(24);
-        const dv = new DataView(buf.buffer);
-        const now = GLib.get_monotonic_time();
-        dv.setUint32(0, Math.floor(now / 1e6), true);
-        dv.setUint32(8, now % 1000000, true);
-        dv.setUint16(16, type, true);
-        dv.setUint16(18, code, true);
-        dv.setInt32(20, value, true);
-        this._write(buf);
-    }
-}
-
 export default class SelfTest extends Extension {
     enable() {
         GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
@@ -137,87 +51,111 @@ export default class SelfTest extends Extension {
     disable() {}
 
     async _boot() {
-        report('shell stage=' + global.stage.width + 'x' + global.stage.height);
+        report('stage=' + global.stage.width + 'x' + global.stage.height);
         await sleep(3000);
 
         const ext = Main.extensionManager?.lookup('edgegesture@aiwork.local');
-        if (!ext) {
-            report('FAIL edgegesture 未启用');
+        const inst = ext?.stateObj ?? ext;
+        if (!inst) {
+            check(false, 'edgegesture 已启用');
             return;
         }
-        const inst = ext.stateObj ?? ext;
-        report('edgegesture state=' + (inst ? 'ok' : 'null'));
+        check(true, 'edgegesture 已启用');
+        check((inst._input?.pointerCount ?? 0) > 0,
+            '读到鼠标设备（' + (inst._input?.pointerCount ?? 0) + ' 个）');
 
-        // 检查 evdev 是否读到设备
-        const input = inst._input;
-        report('evdev 指针设备数=' + (input?.pointerCount ?? 'n/a'));
-        check((input?.pointerCount ?? 0) > 0, '读到了鼠标设备');
+        await this._wheelCase(inst);
+        await this._zoneCase(inst);
+        await this._shotCase();
+        await this._ocrCase();
 
-        // 放一段已知文字，供 OCR 用
-        const label = new St.Label({
-            style_class: 'edgegesture-ocr-text',
-            text: '边缘手势 OCR 自测 42',
-        });
-        label.set_position(420, 320);
-        Main.uiGroup.add_child(label);
-        await sleep(600);
-
-        await this._geometryCase(inst);
-        await this._stickCase(inst);
-
-        label.destroy();
-        inst._sticks?.closeAll();
-        await sleep(300);
-        report(`selftest 结束，失败 ${_fail} 项`);
+        report('selftest 结束，失败 ' + _fail + ' 项');
     }
 
-    /** 截图尺寸/通道是否和框一致。 */
-    async _geometryCase(inst) {
-        const mod = await import('file://' + ROOT +
-            '/extension/edgegesture@aiwork.local/lib/screenshot.js');
+    /** 滚轮方向符号（核心回归）。 */
+    async _wheelCase() {
+        const mod = await import('file://' + EXT + '/lib/edgeWheel.js');
+        const cd = mod.computeDelta;
+        check(typeof cd === 'function', 'computeDelta 已导出');
+        if (typeof cd !== 'function')
+            return;
+        const s = 0.05;
+        check(cd('up', 1, s) > 0, 'UP -> 正向 (' + cd('up', 1, s) + ')');
+        check(cd('down', 1, s) < 0, 'DOWN -> 负向 (' + cd('down', 1, s) + ')');
+        check(cd('up', -1, s) > 0 && cd('down', -1, s) < 0, '负幅度不翻转方向');
+        check(cd('left', 1, s) < 0 && cd('right', 1, s) > 0, '左右方向正确');
+    }
+
+    /** 边缘判定：四条边 + 四角 + 中间不触发。 */
+    async _zoneCase(inst) {
+        const w = inst._wheel;
+        if (!w) {
+            check(false, 'EdgeWheel 实例存在');
+            return;
+        }
+        const mon = [{x: 0, y: 0, w: global.stage.width, h: global.stage.height}];
+        const probe = (x, y) => {
+            // 直接调用 _zoneAt
+            const saved = w._geometry;
+            w._geometry = () => ({monitors: mon, pointer: [x, y]});
+            const z = w._zoneAt(x, y);
+            w._geometry = saved;
+            return z;
+        };
+        const W = global.stage.width;
+        const H = global.stage.height;
+        check(probe(5, 500) === 'left', '左边缘 -> left');
+        check(probe(W - 5, 500) === 'right', '右边缘 -> right');
+        check(probe(500, 5) === 'top', '上边缘 -> top');
+        check(probe(500, H - 5) === 'bottom', '下边缘 -> bottom');
+        check(probe(W / 2, H / 2) === null, '屏幕中间不触发');
+        check(probe(120, 500) === null, '离边缘 120px 不触发');
+    }
+
+    /** 截图：尺寸必须是 逻辑 × scale。 */
+    async _shotCase() {
+        const mod = await import('file://' + EXT + '/lib/screenshot.js');
         const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
         const {bytes, physical} = await mod.grabArea(400, 300, 200, 150);
-        const pack = await import('gi://GdkPixbuf');
-        const buf = pack.default.Pixbuf.new_from_stream(
+        const buf = GdkPixbuf.Pixbuf.new_from_stream(
             Gio.MemoryInputStream.new_from_bytes(bytes), null);
-        report(`截图 请求200x150 物理${physical.w}x${physical.h} png=${buf.width}x${buf.height} ch=${buf.get_n_channels()} scale=${scale}`);
-        check(Math.round(200 * scale) === buf.width, '截图宽度 = 逻辑宽 × scale');
+        report('截图 200x150 逻辑 -> ' + buf.width + 'x' + buf.height +
+            ' 物理, scale=' + scale + ', ch=' + buf.get_n_channels());
+        check(buf.width === Math.round(200 * scale), '截图宽度 = 逻辑宽 × scale');
         check(buf.get_n_channels() >= 3, '截图通道数正常');
+
+        const ic = mod.imageContentFromBytes(bytes);
+        report('ImageContent ' + ic.width + 'x' + ic.height);
+        check(ic.width === buf.width, 'ImageContent 尺寸与 PNG 一致');
     }
 
-    /** 贴图：尺寸应等于框的逻辑尺寸，且不夺取输入。 */
-    async _stickCase(inst) {
-        const mod = await import('file://' + ROOT +
-            '/extension/edgegesture@aiwork.local/lib/screenshot.js');
-        const {bytes} = await mod.grabArea(400, 300, 200, 150);
-        const rect = {x: 400, y: 300, w: 200, h: 150};
-        const before = inst._sticks.count;
-        const grabBefore = global.stage.get_grab_actor();
-        const modalBefore = Main.modalCount;
-        inst._sticks.add(bytes, rect, {opacity: 1});
-        await sleep(800);
-        const stick = inst._sticks._sticks[inst._sticks._sticks.length - 1];
-        report(`贴图 actor=${stick.actor.width}x${stick.actor.height} @${stick.actor.x},${stick.actor.y} reactive=${stick.actor.reactive}`);
-        check(inst._sticks.count === before + 1, '贴图已创建');
-        check(Math.abs(stick.actor.width - 200) <= 2 && Math.abs(stick.actor.height - 150) <= 2,
-            '贴图尺寸与框一致（不再放大）');
-        check(stick.actor.reactive === false, '贴图不抢指针事件');
+    /** OCR 后端：放一段文字，截下来识别。 */
+    async _ocrCase() {
+        const label = new St.Label({text: '边缘手势 OCR 自测 42'});
+        label.set_position(500, 400);
+        Main.uiGroup.add_child(label);
+        await sleep(700);
 
-        // 关键：贴图不能改变 grab / modalCount（之前是 grab 把全屏锁死的）
-        const grabAfter = global.stage.get_grab_actor();
-        const modalAfter = Main.modalCount;
-        report("grab: " + (grabBefore?.constructor?.name ?? "null") + " -> " +
-            (grabAfter?.constructor?.name ?? "null") + ", modalCount: " +
-            modalBefore + " -> " + modalAfter);
-        check(grabAfter === grabBefore, "贴图没有改变 grab actor");
-        check(modalAfter === modalBefore, "贴图没有增加 modalCount");
-        check(grabAfter !== stick.actor, "grab 不是贴图自己（不锁死全屏输入）");
+        const shot = await import('file://' + EXT + '/lib/screenshot.js');
+        const {bytes} = await shot.grabArea(480, 380, 400, 120);
 
-        // ESC 关闭贴图
-        if (inst._sticks.count > 0) {
-            inst._sticks.closeAll();
-            await sleep(400);
+        const ext = Main.extensionManager?.lookup('edgegesture@aiwork.local');
+        const inst = ext?.stateObj ?? ext;
+        const path = shot.tmpPath('selftest-ocr.png');
+        shot.bytesToFile(bytes, path);
+        try {
+            const text = await inst._ocr.run(path, 'chi_sim+eng');
+            report('OCR 结果: ' + JSON.stringify(text.slice(0, 60)));
+            check(/42|OCR|边缘/.test(text), 'OCR 识别出屏上文字');
+        } catch (e) {
+            check(false, 'OCR 执行: ' + e.message);
+        } finally {
+            try {
+                Gio.File.new_for_path(path).delete(null);
+            } catch {
+                // ignore
+            }
+            label.destroy();
         }
-        check(inst._sticks.count === 0, '贴图可关闭');
     }
 }

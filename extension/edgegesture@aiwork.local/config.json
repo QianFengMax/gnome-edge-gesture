@@ -16,7 +16,7 @@
     "traceColor": "#E47542",
     "traceWidth": 3,
     "rectCw": "ocr",
-    "rectCcw": "stick",
+    "rectCcw": "none",
     "templateActions": {}
   },
   "ocr": {
@@ -25,6 +25,5 @@
     "copyText": true,
     "lang": "chi_sim+eng"
   },
-  "stick": {"opacity": 1.0},
   "debug": true
 }

@@ -18,3 +18,256 @@
 [2026-11-11 07:01:05] [DEBUG] 贴图尺寸 物理200x150 scale=1 逻辑200x150 显示200x150
 [2026-11-11 07:01:05] [INFO] 贴图创建 200x150 @400,300
 [2026-11-11 07:01:06] [INFO] 关闭贴图，剩 0
+[2026-11-11 07:04:00] [INFO] ═══ 启用 edgegesture 2.0-evdev ═══
+[2026-11-11 07:04:00] [INFO] 配置: /home/username/.local/share/gnome-shell/extensions/edgegesture@aiwork.local/config.json debug=true
+[2026-11-11 07:04:00] [INFO] 环境: session=wayland desktop=GNOME mode=unknown
+[2026-11-11 07:04:00] [INFO] 日志文件: /home/username/.local/share/gnome-shell/extensions/edgegesture@aiwork.local/logs/edgegesture.log
+[2026-11-11 07:04:00] [INFO] backlight 设备 ktz8866-backlight max=2047 writable=false type=raw
+[2026-11-11 07:04:00] [INFO] 边缘滚轮就绪 亮度后端=mutter 音量=ok
+[2026-11-11 07:04:00] [INFO] 手势引擎就绪（evdev 事件驱动）
+[2026-11-11 07:04:00] [INFO] 监听 keyboard: keyd virtual keyboard (/dev/input/event3)
+[2026-11-11 07:04:00] [INFO] 监听 pointer: keyd virtual pointer (/dev/input/event4)
+[2026-11-11 07:04:00] [INFO] 监听 pointer: Xiaomi Focus Pen Mouse (/dev/input/event9)
+[2026-11-11 07:04:00] [INFO] 监听 keyboard: Xiaomi Keyboard (/dev/input/event12)
+[2026-11-11 07:04:00] [INFO] 监听 pointer: VXE R1SE+ Mouse (/dev/input/event16)
+[2026-11-11 07:04:00] [INFO] 监听 keyboard: VXE R1SE+ Keyboard (/dev/input/event17)
+[2026-11-11 07:04:00] [INFO] 指针设备: keyd virtual pointer, Xiaomi Focus Pen Mouse, VXE R1SE+ Mouse
+[2026-11-11 07:04:00] [INFO] 指针设备数: 3
+[2026-11-11 07:04:00] [INFO] 启动完成
+[2026-11-11 07:05:22] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:22] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:22] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:22] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:22] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:22] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:22] [DEBUG] 边缘滚轮 brightness delta=0.100
+[2026-11-11 07:05:22] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:22] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:23] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:23] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:23] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:23] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:23] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:23] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:23] [DEBUG] 边缘滚轮 brightness delta=0.100
+[2026-11-11 07:05:23] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:23] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:24] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:24] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:24] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:24] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:24] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:24] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:27] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:27] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:28] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:28] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:28] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:29] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:29] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:29] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:29] [DEBUG] 边缘滚轮 brightness delta=0.050
+[2026-11-11 07:05:50] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:50] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:50] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:50] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:50] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:50] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:51] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:51] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:51] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:51] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:51] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:51] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:51] [DEBUG] 边缘滚轮 volume delta=0.100
+[2026-11-11 07:05:51] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:51] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:51] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:52] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:52] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:52] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:52] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:52] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:52] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:52] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:52] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:52] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:53] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:53] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:53] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:53] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:53] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:53] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:53] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:54] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:54] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:54] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:54] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:54] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:54] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:54] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:54] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:58] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:59] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:59] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:59] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:59] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:59] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:59] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:59] [DEBUG] 边缘滚轮 volume delta=0.100
+[2026-11-11 07:05:59] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:05:59] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:06:00] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:06:00] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:06:00] [DEBUG] 边缘滚轮 volume delta=0.100
+[2026-11-11 07:06:00] [DEBUG] 边缘滚轮 volume delta=0.100
+[2026-11-11 07:06:00] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:06:00] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:06:00] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:06:00] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:06:00] [DEBUG] 边缘滚轮 volume delta=0.100
+[2026-11-11 07:06:00] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:06:00] [DEBUG] 边缘滚轮 volume delta=0.050
+[2026-11-11 07:06:40] [DEBUG] 右键按下 @398,482
+[2026-11-11 07:06:40] [DEBUG] 开始记录轨迹
+[2026-11-11 07:06:41] [INFO] 矩形 逆时针 {"x":398,"y":449,"w":308,"h":181} -> stick
+[2026-11-11 07:06:41] [INFO] 执行矩形动作: stick {"x":398,"y":449,"w":308,"h":181}
+[2026-11-11 07:06:41] [DEBUG] 截图 逻辑(398,449 308x181) -> 物理(398,449 308x181) scale=1 png=147420B
+[2026-11-11 07:06:41] [DEBUG] 贴图尺寸 物理616x362 scale=1 逻辑616x362 显示616x362
+[2026-11-11 07:06:41] [INFO] 贴图创建 616x362 @398,449
+[2026-11-11 07:06:43] [DEBUG] 贴图缩放 -> 1.80
+[2026-11-11 07:06:44] [DEBUG] 贴图缩放 -> 1.00
+[2026-11-11 07:06:44] [DEBUG] 贴图缩放 -> 1.80
+[2026-11-11 07:06:44] [DEBUG] 贴图缩放 -> 1.00
+[2026-11-11 07:06:46] [INFO] 关闭贴图，剩 0
+[2026-11-11 07:06:47] [DEBUG] 右键按下 @464,443
+[2026-11-11 07:06:47] [DEBUG] 开始记录轨迹
+[2026-11-11 07:06:48] [INFO] 矩形 逆时针 {"x":464,"y":425,"w":178,"h":103} -> stick
+[2026-11-11 07:06:48] [INFO] 执行矩形动作: stick {"x":464,"y":425,"w":178,"h":103}
+[2026-11-11 07:06:48] [DEBUG] 截图 逻辑(464,425 178x103) -> 物理(464,425 178x103) scale=1 png=50081B
+[2026-11-11 07:06:48] [DEBUG] 贴图尺寸 物理356x206 scale=1 逻辑356x206 显示356x206
+[2026-11-11 07:06:48] [INFO] 贴图创建 356x206 @464,425
+[2026-11-11 07:06:50] [DEBUG] 贴图缩放 -> 1.80
+[2026-11-11 07:06:50] [DEBUG] 贴图缩放 -> 1.00
+[2026-11-11 07:06:50] [DEBUG] 贴图缩放 -> 1.80
+[2026-11-11 07:06:50] [DEBUG] 贴图缩放 -> 1.00
+[2026-11-11 07:06:54] [INFO] ─── 禁用 edgegesture ───
+[2026-11-11 07:06:55] [INFO] ═══ 启用 edgegesture 2.0-evdev ═══
+[2026-11-11 07:06:55] [INFO] 配置: /home/username/.local/share/gnome-shell/extensions/edgegesture@aiwork.local/config.json debug=true
+[2026-11-11 07:06:55] [INFO] 环境: session=wayland desktop=GNOME mode=unknown
+[2026-11-11 07:06:55] [INFO] 日志文件: /home/username/.local/share/gnome-shell/extensions/edgegesture@aiwork.local/logs/edgegesture.log
+[2026-11-11 07:06:55] [INFO] backlight 设备 ktz8866-backlight max=2047 writable=false type=raw
+[2026-11-11 07:06:55] [INFO] 边缘滚轮就绪 亮度后端=mutter 音量=ok
+[2026-11-11 07:06:55] [INFO] 手势引擎就绪（evdev 事件驱动）
+[2026-11-11 07:06:55] [INFO] 监听 keyboard: keyd virtual keyboard (/dev/input/event3)
+[2026-11-11 07:06:55] [INFO] 监听 pointer: keyd virtual pointer (/dev/input/event4)
+[2026-11-11 07:06:55] [INFO] 监听 pointer: Xiaomi Focus Pen Mouse (/dev/input/event9)
+[2026-11-11 07:06:55] [INFO] 监听 keyboard: Xiaomi Keyboard (/dev/input/event12)
+[2026-11-11 07:06:55] [INFO] 监听 pointer: VXE R1SE+ Mouse (/dev/input/event16)
+[2026-11-11 07:06:55] [INFO] 监听 keyboard: VXE R1SE+ Keyboard (/dev/input/event17)
+[2026-11-11 07:06:55] [INFO] 指针设备: keyd virtual pointer, Xiaomi Focus Pen Mouse, VXE R1SE+ Mouse
+[2026-11-11 07:06:55] [INFO] 指针设备数: 3
+[2026-11-11 07:06:55] [INFO] 启动完成
+[2026-11-11 07:07:31] [DEBUG] 右键按下 @1256,473
+[2026-11-11 07:07:31] [DEBUG] 开始记录轨迹
+[2026-11-11 07:07:32] [INFO] 矩形 顺时针 {"x":965,"y":427,"w":291,"h":212} -> ocr
+[2026-11-11 07:07:32] [INFO] 执行矩形动作: ocr {"x":965,"y":427,"w":291,"h":212}
+[2026-11-11 07:07:32] [DEBUG] 截图 逻辑(965,427 291x212) -> 物理(965,427 291x212) scale=1 png=121048B
+[2026-11-11 07:07:32] [DEBUG] OCR 开始 /tmp/edgegesture/ocr-1794352052882.png
+[2026-11-11 07:07:34] [INFO] OCR 完成，44 字符
+[2026-11-11 07:07:34] [DEBUG] OCR 浮层 720x160
+[2026-11-11 07:07:42] [INFO] ═══ 启用 edgegesture 2.0-evdev ═══
+[2026-11-11 07:07:42] [INFO] 配置: /home/username/AIWORK/项目-projects/gnome-edge-gesture/.tmp/nested/data/gnome-shell/extensions/edgegesture@aiwork.local/config.json debug=true
+[2026-11-11 07:07:42] [INFO] 环境: session=wayland desktop=GNOME mode=unknown
+[2026-11-11 07:07:42] [INFO] 日志文件: /home/username/AIWORK/项目-projects/gnome-edge-gesture/.tmp/nested/data/gnome-shell/extensions/edgegesture@aiwork.local/logs/edgegesture.log
+[2026-11-11 07:07:42] [INFO] backlight 设备 ktz8866-backlight max=2047 writable=false type=raw
+[2026-11-11 07:07:42] [INFO] logind SetBrightness 可用
+[2026-11-11 07:07:42] [INFO] 边缘滚轮就绪 亮度后端=logind 音量=ok
+[2026-11-11 07:07:42] [INFO] 手势引擎就绪（evdev 事件驱动）
+[2026-11-11 07:07:42] [INFO] 监听 keyboard: keyd virtual keyboard (/dev/input/event3)
+[2026-11-11 07:07:42] [INFO] 监听 pointer: keyd virtual pointer (/dev/input/event4)
+[2026-11-11 07:07:42] [INFO] 监听 pointer: Xiaomi Focus Pen Mouse (/dev/input/event9)
+[2026-11-11 07:07:42] [INFO] 监听 keyboard: Xiaomi Keyboard (/dev/input/event12)
+[2026-11-11 07:07:42] [INFO] 监听 pointer: VXE R1SE+ Mouse (/dev/input/event16)
+[2026-11-11 07:07:42] [INFO] 监听 keyboard: VXE R1SE+ Keyboard (/dev/input/event17)
+[2026-11-11 07:07:42] [INFO] 指针设备: keyd virtual pointer, Xiaomi Focus Pen Mouse, VXE R1SE+ Mouse
+[2026-11-11 07:07:42] [INFO] 指针设备数: 3
+[2026-11-11 07:07:42] [INFO] 启动完成
+[2026-11-11 07:07:45] [DEBUG] 右键按下 @851,531
+[2026-11-11 07:07:45] [DEBUG] 开始记录轨迹
+[2026-11-11 07:07:46] [INFO] 矩形 顺时针 {"x":645,"y":495,"w":208,"h":183} -> ocr
+[2026-11-11 07:07:46] [INFO] 执行矩形动作: ocr {"x":645,"y":495,"w":208,"h":183}
+[2026-11-11 07:07:46] [DEBUG] 截图 逻辑(645,495 208x183) -> 物理(645,495 208x183) scale=1 png=108476B
+[2026-11-11 07:07:46] [DEBUG] OCR 开始 /tmp/edgegesture/ocr-1794352066142.png
+[2026-11-11 07:07:46] [DEBUG] 贴图尺寸 物理200x150 scale=1 逻辑200x150 显示200x150
+[2026-11-11 07:07:46] [INFO] 贴图创建 200x150 @400,300
+[2026-11-11 07:07:47] [INFO] 关闭贴图，剩 0
+[2026-11-11 07:07:47] [INFO] OCR 完成，66 字符
+[2026-11-11 07:07:47] [DEBUG] OCR 浮层 720x200
+[2026-11-11 07:07:53] [INFO] ═══ 启用 edgegesture 2.0-evdev ═══
+[2026-11-11 07:07:53] [INFO] 配置: /home/username/AIWORK/项目-projects/gnome-edge-gesture/.tmp/nested/data/gnome-shell/extensions/edgegesture@aiwork.local/config.json debug=true
+[2026-11-11 07:07:53] [INFO] 环境: session=wayland desktop=GNOME mode=unknown
+[2026-11-11 07:07:53] [INFO] 日志文件: /home/username/AIWORK/项目-projects/gnome-edge-gesture/.tmp/nested/data/gnome-shell/extensions/edgegesture@aiwork.local/logs/edgegesture.log
+[2026-11-11 07:07:53] [INFO] backlight 设备 ktz8866-backlight max=2047 writable=false type=raw
+[2026-11-11 07:07:53] [INFO] logind SetBrightness 可用
+[2026-11-11 07:07:53] [INFO] 边缘滚轮就绪 亮度后端=logind 音量=ok
+[2026-11-11 07:07:53] [INFO] 手势引擎就绪（evdev 事件驱动）
+[2026-11-11 07:07:53] [INFO] 监听 keyboard: keyd virtual keyboard (/dev/input/event3)
+[2026-11-11 07:07:53] [INFO] 监听 pointer: keyd virtual pointer (/dev/input/event4)
+[2026-11-11 07:07:53] [INFO] 监听 pointer: Xiaomi Focus Pen Mouse (/dev/input/event9)
+[2026-11-11 07:07:53] [INFO] 监听 keyboard: Xiaomi Keyboard (/dev/input/event12)
+[2026-11-11 07:07:53] [INFO] 监听 pointer: VXE R1SE+ Mouse (/dev/input/event16)
+[2026-11-11 07:07:53] [INFO] 监听 keyboard: VXE R1SE+ Keyboard (/dev/input/event17)
+[2026-11-11 07:07:53] [INFO] 指针设备: keyd virtual pointer, Xiaomi Focus Pen Mouse, VXE R1SE+ Mouse
+[2026-11-11 07:07:53] [INFO] 指针设备数: 3
+[2026-11-11 07:07:53] [INFO] 启动完成
+[2026-11-11 07:07:57] [DEBUG] 贴图尺寸 物理200x150 scale=1 逻辑200x150 显示200x150
+[2026-11-11 07:07:57] [INFO] 贴图创建 200x150 @400,300
+[2026-11-11 07:07:58] [INFO] 关闭贴图，剩 0
+[2026-11-11 07:08:11] [INFO] ═══ 启用 edgegesture 2.0-evdev ═══
+[2026-11-11 07:08:11] [INFO] 配置: /home/username/AIWORK/项目-projects/gnome-edge-gesture/.tmp/nested/data/gnome-shell/extensions/edgegesture@aiwork.local/config.json debug=true
+[2026-11-11 07:08:11] [INFO] 环境: session=wayland desktop=GNOME mode=unknown
+[2026-11-11 07:08:11] [INFO] 日志文件: /home/username/AIWORK/项目-projects/gnome-edge-gesture/.tmp/nested/data/gnome-shell/extensions/edgegesture@aiwork.local/logs/edgegesture.log
+[2026-11-11 07:08:11] [INFO] backlight 设备 ktz8866-backlight max=2047 writable=false type=raw
+[2026-11-11 07:08:11] [INFO] logind SetBrightness 可用
+[2026-11-11 07:08:11] [INFO] 边缘滚轮就绪 亮度后端=logind 音量=ok
+[2026-11-11 07:08:11] [INFO] 手势引擎就绪（evdev 事件驱动）
+[2026-11-11 07:08:11] [INFO] 监听 keyboard: keyd virtual keyboard (/dev/input/event3)
+[2026-11-11 07:08:11] [INFO] 监听 pointer: keyd virtual pointer (/dev/input/event4)
+[2026-11-11 07:08:11] [INFO] 监听 pointer: Xiaomi Focus Pen Mouse (/dev/input/event9)
+[2026-11-11 07:08:11] [INFO] 监听 keyboard: Xiaomi Keyboard (/dev/input/event12)
+[2026-11-11 07:08:11] [INFO] 监听 pointer: VXE R1SE+ Mouse (/dev/input/event16)
+[2026-11-11 07:08:11] [INFO] 监听 keyboard: VXE R1SE+ Keyboard (/dev/input/event17)
+[2026-11-11 07:08:11] [INFO] 指针设备: keyd virtual pointer, Xiaomi Focus Pen Mouse, VXE R1SE+ Mouse
+[2026-11-11 07:08:11] [INFO] 指针设备数: 3
+[2026-11-11 07:08:11] [INFO] 启动完成
+[2026-11-11 07:09:01] [INFO] ═══ 启用 edgegesture 3.0-no-stick ═══
+[2026-11-11 07:09:01] [INFO] 配置: /home/username/AIWORK/项目-projects/gnome-edge-gesture/.tmp/nested/data/gnome-shell/extensions/edgegesture@aiwork.local/config.json debug=true
+[2026-11-11 07:09:01] [INFO] backlight 设备 ktz8866-backlight max=2047 writable=false type=raw
+[2026-11-11 07:09:01] [INFO] logind SetBrightness 可用
+[2026-11-11 07:09:01] [INFO] 边缘滚轮就绪 亮度后端=logind 音量=ok 左=brightness 右=volume margin=28 step=0.05
+[2026-11-11 07:09:01] [INFO] 手势引擎就绪（evdev 事件驱动）
+[2026-11-11 07:09:01] [INFO] 监听 keyboard: keyd virtual keyboard (/dev/input/event3)
+[2026-11-11 07:09:01] [INFO] 监听 pointer: keyd virtual pointer (/dev/input/event4)
+[2026-11-11 07:09:01] [INFO] 监听 pointer: Xiaomi Focus Pen Mouse (/dev/input/event9)
+[2026-11-11 07:09:01] [INFO] 监听 keyboard: Xiaomi Keyboard (/dev/input/event12)
+[2026-11-11 07:09:01] [INFO] 监听 pointer: VXE R1SE+ Mouse (/dev/input/event16)
+[2026-11-11 07:09:01] [INFO] 监听 keyboard: VXE R1SE+ Keyboard (/dev/input/event17)
+[2026-11-11 07:09:01] [INFO] 指针设备: keyd virtual pointer, Xiaomi Focus Pen Mouse, VXE R1SE+ Mouse
+[2026-11-11 07:09:01] [INFO] 指针设备数: 3
+[2026-11-11 07:09:01] [INFO] 启动完成
+[2026-11-11 07:10:15] [INFO] ═══ 启用 edgegesture 3.0-no-stick ═══
+[2026-11-11 07:10:15] [INFO] 配置: /home/username/AIWORK/项目-projects/gnome-edge-gesture/.tmp/nested/data/gnome-shell/extensions/edgegesture@aiwork.local/config.json debug=true
+[2026-11-11 07:10:15] [INFO] backlight 设备 ktz8866-backlight max=2047 writable=false type=raw
+[2026-11-11 07:10:15] [INFO] logind SetBrightness 可用
+[2026-11-11 07:10:15] [INFO] 边缘滚轮就绪 亮度后端=logind 音量=ok 左=brightness 右=volume margin=28 step=0.05
+[2026-11-11 07:10:15] [INFO] 手势引擎就绪（evdev 事件驱动）
+[2026-11-11 07:10:15] [INFO] 监听 keyboard: keyd virtual keyboard (/dev/input/event3)
+[2026-11-11 07:10:15] [INFO] 监听 pointer: keyd virtual pointer (/dev/input/event4)
+[2026-11-11 07:10:15] [INFO] 监听 pointer: Xiaomi Focus Pen Mouse (/dev/input/event9)
+[2026-11-11 07:10:15] [INFO] 监听 keyboard: Xiaomi Keyboard (/dev/input/event12)
+[2026-11-11 07:10:15] [INFO] 监听 pointer: VXE R1SE+ Mouse (/dev/input/event16)
+[2026-11-11 07:10:15] [INFO] 监听 keyboard: VXE R1SE+ Keyboard (/dev/input/event17)
+[2026-11-11 07:10:15] [INFO] 指针设备: keyd virtual pointer, Xiaomi Focus Pen Mouse, VXE R1SE+ Mouse
+[2026-11-11 07:10:15] [INFO] 指针设备数: 3
+[2026-11-11 07:10:15] [INFO] 启动完成
