@@ -1,0 +1,13 @@
+# 逆向样本（大体积 / 版权归原作者，不入库）
+ref/**/binaries/
+ref/**/extract/
+*.exe
+*.zip
+*.dll
+# 工具产物
+.venv/
+__pycache__/
+*.pyc
+*.idb
+*.i64
+.tmp/
