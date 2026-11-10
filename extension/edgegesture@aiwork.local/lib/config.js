@@ -16,29 +16,20 @@ const DEFAULTS = {
         enabled: true,
         button: 3,
         startDistance: 12,
-        timeout: 1500,
+        timeoutMs: 3000,
         traceColor: '#E47542',
         traceWidth: 3,
         failColor: '#CAD0D3',
         restoreClick: false,
         rectCw: 'ocr',
-        rectCcw: 'stick',
-        templateActions: {
-            'UP': 'none',
-            'DOWN': 'none',
-            'LEFT': 'none',
-            'RIGHT': 'none',
-        },
+        rectCcw: 'none',
+        templateActions: {},
     },
     ocr: {
-        python: '',
+        pythonBin: '',
         script: '',
         lineMerge: true,
         copyToClipboard: true,
-    },
-    stick: {
-        opacity: 238,
-        scale: 1.0,
     },
 };
 
