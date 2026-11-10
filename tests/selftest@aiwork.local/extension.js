@@ -55,7 +55,7 @@ export default class SelfTest extends Extension {
         await sleep(3000);
 
         const ext = Main.extensionManager?.lookup('edgegesture@aiwork.local');
-        const inst = ext?.stateObj ?? ext;
+        const inst = (ext?.stateObj ?? ext)?._impl;
         if (!inst) {
             check(false, 'edgegesture 已启用');
             return;
@@ -140,7 +140,7 @@ export default class SelfTest extends Extension {
         const {bytes} = await shot.grabArea(480, 380, 400, 120);
 
         const ext = Main.extensionManager?.lookup('edgegesture@aiwork.local');
-        const inst = ext?.stateObj ?? ext;
+        const inst = (ext?.stateObj ?? ext)?._impl;
         const path = shot.tmpPath('selftest-ocr.png');
         shot.bytesToFile(bytes, path);
         try {

@@ -62,7 +62,8 @@ function write(level, args) {
             return String(a);
         }
     }).join(' ');
-    const line = '[' + stamp + '] [' + LEVEL_NAME[level] + '] ' + msg + '\n';
+    const line = '[' + stamp + '] [' + LEVEL_NAME[level] +
+        '] ' + msg + '\n';
 
     const sink = level <= Level.ERROR ? console.error : console.log;
     sink('[edgegesture] ' + line.trimEnd());
