@@ -13,7 +13,7 @@ import {grabArea, bytesToFile, tmpPath, copyImage, copyText} from './lib/screens
 
 // 版本戳：日志里能一眼看出 shell 跑的是哪一版代码。
 // ESM 模块会被 shell 缓存，改了代码必须重启 shell（注销重登）才生效。
-const BUILD = '3.3-fd-fix';
+const BUILD = '3.4-hotreload-proof';
 
 export class Impl {
     /** @param {object} ext 外层 Extension 实例（用来拿 dir） */
