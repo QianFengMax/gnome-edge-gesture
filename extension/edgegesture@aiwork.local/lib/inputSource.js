@@ -1,5 +1,6 @@
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
+import GioUnix from 'gi://GioUnix';
 
 import * as Log from './logger.js';
 
@@ -85,25 +86,57 @@ class Device {
         this.kind = kind;       // 'pointer' | 'keyboard'
         this.name = name;
         this.size = size;
-        this.stream = null;
+        this.stream = null;     // DataInputStream
+        this.base = null;       // 底层 GLocalFileInputStream（真正持有 fd）
+        this.cancellable = new Gio.Cancellable();
+        this.fd = -1;
         this.open = false;
         this.failures = 0;
     }
 
     close() {
+        // 顺序很关键：流上还有挂起的 read_bytes_async 时，直接 close()
+        // 会因「操作进行中」而失败，错误被吞掉，fd 就永远不释放。
+        // 连续 disable/enable 会不断累积同一设备的 fd，而 evdev 是按 fd
+        // 分发事件的，多个读取者互相抢，表现为「事件时有时无、方向全乱」。
+        try {
+            this.cancellable.cancel();
+        } catch (e) {
+            Log.warn('cancel 失败 ' + this.name + ': ' + e.message);
+        }
+        this.open = false;
         try {
             this.stream?.close(null);
-        } catch {
-            // ignore
+        } catch (e) {
+            Log.warn('关闭 DataInputStream 失败 ' + this.name + ': ' + e.message);
+        }
+        try {
+            this.base?.close(null);
+        } catch (e) {
+            Log.warn('关闭 base stream 失败 ' + this.name + ': ' + e.message);
         }
         this.stream = null;
-        this.open = false;
+        this.base = null;
+        if (this.fd >= 0) {
+            try {
+                GLib.close(this.fd);
+            } catch {
+                // 已由 close_fd 关闭
+            }
+            this.fd = -1;
+        }
+        this.cancellable = new Gio.Cancellable();
     }
 }
+
+// 每次 enable 都新建一个 InputSource；旧实例必须彻底停止，
+// 否则它的 read 回调仍持有 fd 并参与事件分发（evdev 按 fd 抢事件）。
+let _liveInstance = null;
 
 export class InputSource {
     constructor(handlers = {}) {
         this._handlers = handlers;
+        this._alive = true;
         this._devices = new Map();
         this._monitorId = 0;
         this._rescanId = 0;
@@ -124,6 +157,11 @@ export class InputSource {
     enable() {
         if (this._enabled)
             return;
+        // 任何旧实例立即失效（防止上一个 enable 的 reader 继续活着）
+        if (_liveInstance && _liveInstance !== this)
+            _liveInstance.disable();
+        _liveInstance = this;
+        this._alive = true;
         this._enabled = true;
         this._scan();
         // 插拔后重扫（去抖）
@@ -138,6 +176,9 @@ export class InputSource {
 
     disable() {
         this._enabled = false;
+        this._alive = false;
+        if (_liveInstance === this)
+            _liveInstance = null;
         this._cancelRescan();
         for (const dev of this._devices.values())
             dev.close();
@@ -147,18 +188,28 @@ export class InputSource {
     rescan() {
         if (!this._enabled)
             return;
-        const seen = new Set();
-        for (const path of this._listEventDevices()) {
-            seen.add(path);
-            if (this._devices.has(path))
-                continue;
-            this._openDevice(path);
-        }
+        const seen = new Set(this._listEventDevices());
+
+        // 先关掉已经消失或失效的设备，避免 fd 泄漏。
+        // evdev 按 fd 分发事件，同一设备留两个 fd 会互相抢事件，
+        // 表现为「事件时有时无、方向错乱」，这是之前功能全失效的根因。
         for (const [path, dev] of [...this._devices]) {
-            if (!seen.has(path) || !dev.open && dev.failures > 3) {
+            const gone = !seen.has(path);
+            const dead = !dev.open && dev.failures > 5;
+            if (gone || dead) {
                 dev.close();
                 this._devices.delete(path);
             }
+        }
+
+        // 再打开还没打开的设备（必须保证同一路径只开一个 fd）
+        for (const path of seen) {
+            const existing = this._devices.get(path);
+            if (existing?.open)
+                continue;
+            if (existing)
+                existing.close();
+            this._openDevice(path);
         }
     }
 
@@ -223,10 +274,26 @@ export class InputSource {
             return;
         }
 
+        const old = this._devices.get(path);
+        if (old?.open) {
+            // 已经有打开中的 fd，直接复用，绝不重复打开
+            return;
+        }
+        if (old)
+            old.close();
+
         const dev = new Device(path, kind, name, EVENT_SIZE);
         try {
-            const file = Gio.File.new_for_path(path);
-            dev.stream = new Gio.DataInputStream({base_stream: file.read(null)});
+            // 用裸 fd + UnixInputStream：Gio.File.read() 会做内部缓存，
+            // close() 后 fd 仍可能被 libgio 持有；连续 disable/enable 会
+            // 累积同一设备的多个 fd，而 evdev 按 fd 分发事件，
+            // 多读取者互相抢 -> 事件丢失、方向错乱。
+            const fd = GLib.open(path, 0, 0);
+            if (fd < 0)
+                throw new Error('GLib.open 返回 ' + fd);
+            dev.fd = fd;
+            dev.base = new GioUnix.InputStream({fd, close_fd: true});
+            dev.stream = new Gio.DataInputStream({base_stream: dev.base});
             dev.open = true;
         } catch (e) {
             dev.failures++;
@@ -241,19 +308,26 @@ export class InputSource {
     }
 
     _readLoop(dev) {
-        if (!dev.open || !this._enabled)
+        if (!dev.open || !this._enabled || !this._alive)
             return;
-        dev.stream.read_bytes_async(dev.size, GLib.PRIORITY_DEFAULT, null, (src, res) => {
+        dev.stream.read_bytes_async(dev.size, GLib.PRIORITY_DEFAULT, dev.cancellable, (src, res) => {
+            if (!this._alive || !this._enabled || dev.cancellable.is_cancelled()) {
+                // 实例已失效：不再续读，避免旧 fd 继续抢事件
+                return;
+            }
             let bytes;
             try {
                 bytes = src.read_bytes_finish(res);
             } catch (e) {
+                if (dev.cancellable.is_cancelled() || !this._alive)
+                    return;
                 Log.warn(`读 ${dev.name} 失败，稍后重连: ${e.message}`);
                 dev.close();
                 dev.failures++;
                 if (this._enabled)
                     GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 3, () => {
                         if (this._enabled) {
+                            dev.close();
                             this._devices.delete(dev.path);
                             this.rescan();
                         }
