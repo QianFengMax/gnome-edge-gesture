@@ -28,12 +28,11 @@
     "lineMerge": true,
     "copyToClipboard": true,
     "chain": [
-      "remote",
       "rust",
       "python"
     ],
     "remote": {
-      "provider": "none",
+      "provider": "baidu",
       "apiKey": "",
       "secretKey": "",
       "url": "",
@@ -44,5 +43,5 @@
     "lang": "chi_sim+eng",
     "copyText": true
   },
-  "debug": true
+  "debug": false
 }
