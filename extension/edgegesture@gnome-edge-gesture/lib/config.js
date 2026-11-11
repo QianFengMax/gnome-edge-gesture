@@ -66,10 +66,27 @@ export function loadConfig(extensionDir) {
 }
 
 /**
- * 从扩展目录推导项目根。
- * 扩展装在 <项目>/extension/<uuid>/，所以项目根是上两级。
- * 配置里的 bin/、.venv/、backend/ 都是相对项目根写的。
+ * 写回 config.json。设置页面用它保存改动。
+ *
+ * 用 replace_contents 而不是直接写：它会先写临时文件再原子重命名，
+ * 避免扩展正好在读配置时读到半截内容。
+ *
+ * @returns {{ok: boolean, error?: string}}
  */
+export function saveConfig(extensionDir, config) {
+    const path = GLib.build_filenamev([extensionDir, 'config.json']);
+    try {
+        const file = Gio.File.new_for_path(path);
+        const NL = String.fromCharCode(10);
+        const text = JSON.stringify(config, null, 2) + NL;
+        file.replace_contents(text, null, false,
+            Gio.FileCreateFlags.REPLACE_DESTINATION, null);
+        return {ok: true};
+    } catch (e) {
+        return {ok: false, error: e.message};
+    }
+}
+
 /**
  * 把可能是符号链接的路径解析成真实路径。
  * 扩展通常以符号链接装在

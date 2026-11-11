@@ -11,15 +11,22 @@
   },
   "gesture": {
     "enabled": true,
+    "button": 3,
     "startDistance": 12,
     "timeoutMs": 3000,
     "traceColor": "#E47542",
     "traceWidth": 3,
+    "failColor": "#CAD0D3",
+    "restoreClick": false,
     "rectCw": "ocr",
     "rectCcw": "none",
     "templateActions": {}
   },
   "ocr": {
+    "pythonBin": ".venv/bin/python3",
+    "script": "backend/ocr_cli.py",
+    "lineMerge": true,
+    "copyToClipboard": true,
     "chain": [
       "remote",
       "rust",
@@ -34,8 +41,6 @@
       "timeoutMs": 3000
     },
     "binary": "bin/edgegesture-ocr",
-    "pythonBin": ".venv/bin/python3",
-    "script": "backend/ocr_cli.py",
     "lang": "chi_sim+eng",
     "copyText": true
   },
