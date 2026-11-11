@@ -1,0 +1,31 @@
+{
+  "edge": {
+    "enabled": true,
+    "margin": 28,
+    "left": "brightness",
+    "right": "volume",
+    "top": "none",
+    "bottom": "none",
+    "step": 0.05,
+    "cooldownMs": 20
+  },
+  "gesture": {
+    "enabled": true,
+    "startDistance": 12,
+    "timeoutMs": 3000,
+    "traceColor": "#E47542",
+    "traceWidth": 3,
+    "rectCw": "ocr",
+    "rectCcw": "none",
+    "templateActions": {}
+  },
+  "ocr": {
+    "backend": "rust",
+    "binary": "bin/edgegesture-ocr",
+    "pythonBin": ".venv/bin/python3",
+    "script": "backend/ocr_cli.py",
+    "copyText": true,
+    "lang": "chi_sim+eng"
+  },
+  "debug": true
+}
