@@ -70,9 +70,58 @@ export function loadConfig(extensionDir) {
  * 扩展装在 <项目>/extension/<uuid>/，所以项目根是上两级。
  * 配置里的 bin/、.venv/、backend/ 都是相对项目根写的。
  */
+/**
+ * 把可能是符号链接的路径解析成真实路径。
+ * 扩展通常以符号链接装在
+ * ~/.local/share/gnome-shell/extensions/<uuid> 下，直接向上取两级会算到
+ * gnome-shell 自己的目录去。
+ */
+function realPath(p) {
+    // 先确认是符号链接：对普通路径查 standard::symlink-target 会刷 GLib 警告
+    if (!GLib.file_test(p, GLib.FileTest.IS_SYMLINK))
+        return p;
+    try {
+        const target = Gio.File.new_for_path(p)
+            .query_info('standard::symlink-target',
+                Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null)
+            .get_symlink_target();
+        if (!target)
+            return p;
+        return target.startsWith('/')
+            ? target
+            : GLib.canonicalize_filename(target, GLib.path_get_dirname(p));
+    } catch {
+        return p;   // 不是符号链接
+    }
+}
+
+/**
+ * 从扩展目录推导项目根，配置里的 bin/ .venv/ backend/ 都相对它。
+ *
+ * 常规布局是 <项目>/extension/<uuid>/，所以是上两级；
+ * 为了容忍其他布局，再向上找一下带 ocr-rs/ 或 bin/ 的目录。
+ * 可用 EDGEGESTURE_HOME 环境变量直接指定。
+ */
 export function projectRoot(extensionDir) {
-    const parent = GLib.path_get_dirname(extensionDir);      // <项目>/extension
-    return GLib.path_get_dirname(parent);                    // <项目>
+    const override = GLib.getenv('EDGEGESTURE_HOME');
+    if (override)
+        return override;
+
+    const real = realPath(extensionDir);
+    let root = GLib.path_get_dirname(GLib.path_get_dirname(real));
+
+    for (let i = 0; i < 4; i++) {
+        for (const marker of ['ocr-rs', 'backend', 'bin']) {
+            if (GLib.file_test(GLib.build_filenamev([root, marker]),
+                    GLib.FileTest.EXISTS))
+                return root;
+        }
+        const up = GLib.path_get_dirname(root);
+        if (up === root)
+            break;
+        root = up;
+    }
+    return GLib.path_get_dirname(GLib.path_get_dirname(real));
 }
 
 export {DEFAULTS};
