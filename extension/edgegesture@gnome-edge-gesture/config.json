@@ -7,7 +7,7 @@
     "top": "none",
     "bottom": "none",
     "step": 0.05,
-    "cooldownMs": 20
+    "cooldownMs": 40
   },
   "gesture": {
     "enabled": true,
@@ -23,16 +23,13 @@
     "templateActions": {}
   },
   "ocr": {
-    "pythonBin": ".venv/bin/python3",
-    "script": "backend/ocr_cli.py",
-    "lineMerge": true,
-    "copyToClipboard": true,
     "chain": [
+      "remote",
       "rust",
       "python"
     ],
     "remote": {
-      "provider": "baidu",
+      "provider": "none",
       "apiKey": "",
       "secretKey": "",
       "url": "",
@@ -40,6 +37,8 @@
       "timeoutMs": 3000
     },
     "binary": "bin/edgegesture-ocr",
+    "pythonBin": ".venv/bin/python3",
+    "script": "backend/ocr_cli.py",
     "lang": "chi_sim+eng",
     "copyText": true
   },
