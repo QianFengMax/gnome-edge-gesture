@@ -1,6 +1,6 @@
 {
   "uuid": "edgegesture@gnome-edge-gesture",
-  "name": "Edge Gesture",
+  "name": "Edge Gesture · 边缘手势",
   "description": "屏幕边缘滚轮调节亮度/音量；右键顺时针画框做本地 OCR",
   "shell-version": ["49", "50"],
   "version": 1,
