@@ -1,0 +1,25 @@
+# Rust 构建产物
+ocr-rs/target/
+bin/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# 运行时日志
+extension/*/logs/
+debug.log
+probe.log
+
+# 临时文件
+.tmp/
+备份-archive/
+
+# 逆向样本（体积大、版权归原作者）
+ref/mouseinc/binaries/
+ref/mouseinc/extract/
+*.exe
+*.zip
+*.dll
+备份-archive/
