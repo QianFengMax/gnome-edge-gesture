@@ -59,34 +59,6 @@ export function normalize(points, size = 100) {
     return points.map(p => [(p[0] - minX) / s * size, (p[1] - minY) / s * size]);
 }
 
-function pathDistance(a, b) {
-    const n = Math.min(a.length, b.length);
-    let sum = 0;
-    for (let i = 0; i < n; i++)
-        sum += Math.hypot(a[i][0] - b[i][0], a[i][1] - b[i][1]);
-    return sum / n;
-}
-
-/**
- * 与模板库匹配。
- * @param {number[][]} points 原始逻辑坐标点列
- * @param {{name: string, points: number[][]}[]} templates
- * @param {number} sensitive 0..100，越大越宽松
- * @returns {{name: string, score: number}|null}
- */
-export function matchTemplate(points, templates, sensitive = 50) {
-    const probe = normalize(resample(points, 32), 100);
-    let best = null;
-    for (const tpl of templates) {
-        const cand = normalize(resample(tpl.points, 32), 100);
-        const d = pathDistance(probe, cand);
-        // d 大致落在 0..70；阈值随灵敏度线性放宽
-        const limit = 12 + sensitive * 0.28;
-        if (d <= limit && (!best || d < best.distance))
-            best = {name: tpl.name, distance: d, score: 1 - d / limit};
-    }
-    return best;
-}
 
 function signedArea(points) {
     let a = 0;
@@ -189,4 +161,3 @@ export function detectRectangle(points, opts = {}) {
 }
 
 /** 折线到自身的长度，用于调试输出。 */
-export {distToSegment};
