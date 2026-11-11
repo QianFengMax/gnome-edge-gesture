@@ -9,3 +9,4 @@ ref/**/extract/
 *.dll
 debug.log
 probe.log
+bin/

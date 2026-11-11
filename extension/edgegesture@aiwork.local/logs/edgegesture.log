@@ -778,3 +778,18 @@
 [2026-11-11 08:00:39] [DEBUG] 滚轮 down 忽略：指针不在边缘带 @1347,504
 [2026-11-11 08:00:39] [DEBUG] 滚轮 down 忽略：指针不在边缘带 @1346,504
 [2026-11-11 08:00:42] [DEBUG] 滚轮 up 忽略：指针不在边缘带 @865,743
+[2026-11-11 08:11:12] [WARN] 读 VXE R1SE+ Mouse 失败，稍后重连: 读取文件出错：没有那个设备
+[2026-11-11 08:11:12] [WARN] 读 VXE R1SE+ Keyboard 失败，稍后重连: 读取文件出错：没有那个设备
+[2026-11-11 08:12:23] [INFO] ─── 禁用 edgegesture ───
+[2026-11-11 08:12:24] [INFO] ═══ 启用 edgegesture 3.4-hotreload-proof ═══
+[2026-11-11 08:12:24] [INFO] 配置: /home/username/.local/share/gnome-shell/extensions/edgegesture@aiwork.local/config.json debug=true
+[2026-11-11 08:12:24] [INFO] backlight 设备 ktz8866-backlight max=2047 writable=false type=raw
+[2026-11-11 08:12:24] [INFO] 边缘滚轮就绪 亮度后端=mutter 音量=ok 左=brightness 右=volume margin=28 step=0.05
+[2026-11-11 08:12:24] [INFO] 手势引擎就绪（evdev 事件驱动）
+[2026-11-11 08:12:24] [INFO] 监听 keyboard: keyd virtual keyboard (/dev/input/event3)
+[2026-11-11 08:12:24] [INFO] 监听 pointer: keyd virtual pointer (/dev/input/event4)
+[2026-11-11 08:12:24] [INFO] 监听 keyboard: Xiaomi Keyboard (/dev/input/event9)
+[2026-11-11 08:12:24] [INFO] 监听 pointer: Xiaomi Focus Pen Mouse (/dev/input/event13)
+[2026-11-11 08:12:24] [INFO] 指针设备: keyd virtual pointer, Xiaomi Focus Pen Mouse
+[2026-11-11 08:12:24] [INFO] 指针设备数: 2
+[2026-11-11 08:12:24] [INFO] 启动完成
