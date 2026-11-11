@@ -1,6 +1,6 @@
 // 纯逻辑自测：跑 node scripts/test_recognizer.mjs
-import {detectRectangle, matchTemplate, resample, normalize} from '../extension/edgegesture@aiwork.local/lib/recognizer.js';
-import {RAW_TEMPLATES} from '../extension/edgegesture@aiwork.local/lib/templates.js';
+import {detectRectangle, matchTemplate, resample, normalize} from '../extension/edgegesture@gnome-edge-gesture/lib/recognizer.js';
+import {RAW_TEMPLATES} from '../extension/edgegesture@gnome-edge-gesture/lib/templates.js';
 
 let fail = 0;
 const ok = (cond, msg) => {

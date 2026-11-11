@@ -65,6 +65,16 @@ export function loadConfig(extensionDir) {
     }
 }
 
+/**
+ * 从扩展目录推导项目根。
+ * 扩展装在 <项目>/extension/<uuid>/，所以项目根是上两级。
+ * 配置里的 bin/、.venv/、backend/ 都是相对项目根写的。
+ */
+export function projectRoot(extensionDir) {
+    const parent = GLib.path_get_dirname(extensionDir);      // <项目>/extension
+    return GLib.path_get_dirname(parent);                    // <项目>
+}
+
 export {DEFAULTS};
 
 /** 写日志用的环境摘要。 */

@@ -2,7 +2,7 @@
 """把 MouseInc 配置里的 Gestures 段转成扩展可直接 import 的 JS 模块。
 
 输入: ref/mouseinc/extract/A/MouseInc.json
-输出: extension/edgegesture@aiwork.local/lib/templates.js
+输出: extension/edgegesture@gnome-edge-gesture/lib/templates.js
 
 只做数据形状转换（折线顶点 -> 归一化 0..100 坐标），不包含原程序任何代码。
 """
@@ -12,7 +12,7 @@ import os
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 SRC = os.path.join(ROOT, 'ref/mouseinc/extract/A/MouseInc.json')
-DST = os.path.join(ROOT, 'extension/edgegesture@aiwork.local/lib/templates.js')
+DST = os.path.join(ROOT, 'extension/edgegesture@gnome-edge-gesture/lib/templates.js')
 
 
 def main():

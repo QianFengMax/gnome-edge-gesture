@@ -7,7 +7,7 @@
 set -u
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-UUID="edgegesture@aiwork.local"
+UUID="edgegesture@gnome-edge-gesture"
 EXT="$ROOT/extension/$UUID"
 LOG="$EXT/logs/edgegesture.log"
 

@@ -92,7 +92,7 @@ fn run(img: &image::RgbImage) -> Result<(Vec<Item>, Timing), Box<dyn std::error:
 
     let t = std::time::Instant::now();
     let boxes = det::detect(img)?;
-    for (i, b) in boxes.iter().take(3).enumerate() {
+    for (_i, _b) in boxes.iter().take(3).enumerate() {
     }
     timing.det_ms = t.elapsed().as_millis();
 

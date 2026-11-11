@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {dirname, join} from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const file = join(here, '../extension/edgegesture@aiwork.local/lib/edgeWheel.js');
+const file = join(here, '../extension/edgegesture@gnome-edge-gesture/lib/edgeWheel.js');
 const src = readFileSync(file, 'utf8');
 
 const m = src.match(/export function computeDelta[\s\S]*?\n}/);

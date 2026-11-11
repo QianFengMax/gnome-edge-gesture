@@ -21,9 +21,9 @@
   },
   "ocr": {
     "backend": "rust",
-    "binary": "/home/username/AIWORK/项目-projects/gnome-edge-gesture/bin/edgegesture-ocr",
-    "pythonBin": "/home/username/AIWORK/项目-projects/gnome-edge-gesture/.venv/bin/python3",
-    "script": "/home/username/AIWORK/项目-projects/gnome-edge-gesture/backend/ocr_cli.py",
+    "binary": "bin/edgegesture-ocr",
+    "pythonBin": ".venv/bin/python3",
+    "script": "backend/ocr_cli.py",
     "copyText": true,
     "lang": "chi_sim+eng"
   },

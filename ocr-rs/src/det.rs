@@ -27,7 +27,15 @@ impl TextBox {
     pub fn height(&self) -> f32 { self.y1 - self.y0 }
 }
 
-const DET_MODEL: &str = "/home/username/AIWORK/项目-projects/gnome-edge-gesture/.venv/lib/python3.14/site-packages/rapidocr_onnxruntime/models/ch_PP-OCRv3_det_infer.onnx";
+/// 模型路径：优先环境变量，其次从可执行文件旁边的 models/ 找。
+fn det_model_path() -> String {
+    if let Ok(p) = std::env::var("EDGEGESTURE_MODEL_DIR") {
+        return format!("{p}/ch_PP-OCRv3_det_infer.onnx");
+    }
+    let exe = std::env::current_exe().unwrap_or_default();
+    let dir = exe.parent().unwrap_or_else(|| std::path::Path::new("."));
+    dir.join("models/ch_PP-OCRv3_det_infer.onnx").to_string_lossy().into_owned()
+}
 
 const THRESH: f32 = 0.3;
 const BOX_THRESH: f32 = 0.5;
@@ -49,7 +57,7 @@ fn session() -> Result<&'static std::sync::Mutex<DetSession>, Box<dyn std::error
     let env = crate::env::get()?;
     let mut session = Session::builder(env)?
         .with_optimization_level(ort::session::builder::GraphOptimizationLevel::Level3)?
-        .commit_from_file(DET_MODEL)?;
+        .commit_from_file(det_model_path())?;
     let input_name = session.inputs()[0].name().to_string();
 
     let warm = Tensor::from_array(([1usize, 3, 32, 32], vec![0f32; 3 * 32 * 32]))?;

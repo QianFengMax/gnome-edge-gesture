@@ -7,14 +7,14 @@ set -u
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="$ROOT/.tmp/nested"
-EXT_UUID="edgegesture@aiwork.local"
-TEST_UUID="edgegesture-selftest@aiwork.local"
+EXT_UUID="edgegesture@gnome-edge-gesture"
+TEST_UUID="edgegesture-selftest@gnome-edge-gesture"
 
 rm -rf "$WORK"
 mkdir -p "$WORK/data/gnome-shell/extensions" "$WORK/config" "$WORK/cache"
 chmod 700 "$WORK/run" 2>/dev/null || true
 ln -sfn "$ROOT/extension/$EXT_UUID" "$WORK/data/gnome-shell/extensions/$EXT_UUID"
-ln -sfn "$ROOT/tests/selftest@aiwork.local" "$WORK/data/gnome-shell/extensions/$TEST_UUID"
+ln -sfn "$ROOT/tests/selftest@gnome-edge-gesture" "$WORK/data/gnome-shell/extensions/$TEST_UUID"
 
 # 不覆盖 XDG_RUNTIME_DIR：Gvc/PipeWire 的音量通道要靠它找到 socket，
 # wayland socket 名字已经唯一（wayland-edgegesture），不需要隔离目录。

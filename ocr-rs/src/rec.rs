@@ -16,7 +16,14 @@ use ort::value::Tensor;
 use crate::charset;
 use crate::resize;
 
-const REC_MODEL: &str = "/home/username/AIWORK/项目-projects/gnome-edge-gesture/.venv/lib/python3.14/site-packages/rapidocr_onnxruntime/models/ch_PP-OCRv3_rec_infer.onnx";
+fn rec_model_path() -> String {
+    if let Ok(p) = std::env::var("EDGEGESTURE_MODEL_DIR") {
+        return format!("{p}/ch_PP-OCRv3_rec_infer.onnx");
+    }
+    let exe = std::env::current_exe().unwrap_or_default();
+    let dir = exe.parent().unwrap_or_else(|| std::path::Path::new("."));
+    dir.join("models/ch_PP-OCRv3_rec_infer.onnx").to_string_lossy().into_owned()
+}
 
 struct RecSession {
     session: Session,
@@ -32,7 +39,7 @@ fn session() -> Result<&'static std::sync::Mutex<RecSession>, Box<dyn std::error
     let env = crate::env::get()?;
     let mut session = Session::builder(env)?
         .with_optimization_level(ort::session::builder::GraphOptimizationLevel::Level3)?
-        .commit_from_file(REC_MODEL)?;
+        .commit_from_file(rec_model_path())?;
     let input_name = session.inputs()[0].name().to_string();
 
     // 从模型元数据取字典（PP-OCRv3 内嵌，无需外部文件）

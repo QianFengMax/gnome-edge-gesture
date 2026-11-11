@@ -43,7 +43,7 @@ export class Impl {
     }
 
     _boot(dir) {
-        this._ocr = new OcrRunner(this._cfg.ocr);
+        this._ocr = new OcrRunner(this._cfg.ocr, Config.projectRoot(this._dir));
 
         this._wheel = new EdgeWheel(this._cfg, () => this._geometry());
         this._wheel.enable();

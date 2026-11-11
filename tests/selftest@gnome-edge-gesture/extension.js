@@ -8,9 +8,10 @@ import St from 'gi://St';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-const ROOT = '/home/username/AIWORK/项目-projects/gnome-edge-gesture';
-const EXT = ROOT + '/extension/edgegesture@aiwork.local';
-const OUT = ROOT + '/.tmp/nested/selftest.txt';
+// 首次 enable 时从 this.dir 推导项目根
+let ROOT = '';
+let EXT = '';
+function outPath() { return ROOT + '/.tmp/nested/selftest.txt'; }
 
 let _fail = 0;
 const _log = [];
@@ -20,7 +21,7 @@ function report(line) {
     console.log('[selftest] ' + line);
     _log.push(stamp + ' ' + line);
     try {
-        Gio.File.new_for_path(OUT).replace_contents(
+        Gio.File.new_for_path(outPath()).replace_contents(
             _log.join('\n') + '\n', null, false, Gio.FileCreateFlags.NONE, null);
     } catch {
         // ignore
@@ -42,6 +43,13 @@ function sleep(ms) {
 
 export default class SelfTest extends Extension {
     enable() {
+        // this.dir 可能是符号链接路径，先解析成真实路径
+        const d = this.dir.query_info('standard::symlink-target',
+            Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null)
+            .get_symlink_target() || this.dir.get_path();
+        const real = d.startsWith('/') ? d : GLib.canonicalize_filename(d, '.');
+        ROOT = GLib.path_get_dirname(GLib.path_get_dirname(real));
+        EXT = ROOT + '/extension/edgegesture@gnome-edge-gesture';
         GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
             this._boot().catch(e => report('BOOT ERROR ' + e.message));
             return GLib.SOURCE_REMOVE;
@@ -54,7 +62,7 @@ export default class SelfTest extends Extension {
         report('stage=' + global.stage.width + 'x' + global.stage.height);
         await sleep(3000);
 
-        const ext = Main.extensionManager?.lookup('edgegesture@aiwork.local');
+        const ext = Main.extensionManager?.lookup('edgegesture@gnome-edge-gesture');
         const inst = (ext?.stateObj ?? ext)?._impl;
         if (!inst) {
             check(false, 'edgegesture 已启用');
@@ -139,7 +147,7 @@ export default class SelfTest extends Extension {
         const shot = await import('file://' + EXT + '/lib/screenshot.js');
         const {bytes} = await shot.grabArea(480, 380, 400, 120);
 
-        const ext = Main.extensionManager?.lookup('edgegesture@aiwork.local');
+        const ext = Main.extensionManager?.lookup('edgegesture@gnome-edge-gesture');
         const inst = (ext?.stateObj ?? ext)?._impl;
         const path = shot.tmpPath('selftest-ocr.png');
         shot.bytesToFile(bytes, path);

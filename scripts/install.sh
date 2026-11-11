@@ -3,7 +3,7 @@
 set -eu
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-UUID="edgegesture@aiwork.local"
+UUID="edgegesture@gnome-edge-gesture"
 DEST="$HOME/.local/share/gnome-shell/extensions/$UUID"
 
 mkdir -p "$(dirname "$DEST")"
