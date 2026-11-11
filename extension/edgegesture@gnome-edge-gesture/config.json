@@ -20,12 +20,24 @@
     "templateActions": {}
   },
   "ocr": {
-    "backend": "rust",
+    "chain": [
+      "remote",
+      "rust",
+      "python"
+    ],
+    "remote": {
+      "provider": "none",
+      "apiKey": "",
+      "secretKey": "",
+      "url": "",
+      "language": "chs",
+      "timeoutMs": 3000
+    },
     "binary": "bin/edgegesture-ocr",
     "pythonBin": ".venv/bin/python3",
     "script": "backend/ocr_cli.py",
-    "copyText": true,
-    "lang": "chi_sim+eng"
+    "lang": "chi_sim+eng",
+    "copyText": true
   },
   "debug": true
 }
