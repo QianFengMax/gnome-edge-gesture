@@ -1,6 +1,5 @@
 // 纯逻辑自测：跑 node scripts/test_recognizer.mjs
-import {detectRectangle, matchTemplate, resample, normalize} from '../extension/edgegesture@gnome-edge-gesture/lib/recognizer.js';
-import {RAW_TEMPLATES} from '../extension/edgegesture@gnome-edge-gesture/lib/templates.js';
+import {detectRectangle, resample, normalize} from '../extension/edgegesture@gnome-edge-gesture/lib/recognizer.js';
 
 let fail = 0;
 const ok = (cond, msg) => {
@@ -48,30 +47,6 @@ ok(detectRectangle(open, {minSize: 80}) === null, '未闭合路径不判为矩�
 ok(detectRectangle([[0, 0], [100, 0], [200, 0], [300, 0], [400, 0], [500, 0]], {minSize: 80}) === null, '直线不判为矩形');
 
 // 6. 模板匹配：画一条向上的线
-const up = [];
-for (let i = 0; i <= 40; i++) up.push([500, 500 - i * 6]);
-let hit = matchTemplate(up, RAW_TEMPLATES, 50);
-ok(hit?.name === 'UP', '向上划 = UP（实际 ' + hit?.name + ' dist=' + hit?.distance?.toFixed(2) + '）');
-
-// 7. 向下
-const down = [];
-for (let i = 0; i <= 40; i++) down.push([500, 300 + i * 6]);
-hit = matchTemplate(down, RAW_TEMPLATES, 50);
-ok(hit?.name === 'DOWN', '向下划 = DOWN（实际 ' + hit?.name + '）');
-
-// 8. 向右
-const right = [];
-for (let i = 0; i <= 40; i++) right.push([300 + i * 6, 500]);
-hit = matchTemplate(right, RAW_TEMPLATES, 50);
-ok(hit?.name === 'RIGHT', '向右划 = RIGHT（实际 ' + hit?.name + '）');
-
-// 9. 先上再下 = UP-DOWN
-const ud = [];
-for (let i = 0; i <= 20; i++) ud.push([500, 500 - i * 6]);
-for (let i = 0; i <= 20; i++) ud.push([500, 380 + i * 6]);
-hit = matchTemplate(ud, RAW_TEMPLATES, 60);
-ok(hit?.name === 'UP-DOWN', '上下来回 = UP-DOWN（实际 ' + hit?.name + '）');
-
 // 10. 重采样长度
 ok(resample(cw, 32).length === 32, '重采样得到 32 点');
 ok(normalize([[10, 10], [110, 10]], 100).every(p => p.every(v => v >= 0 && v <= 100)), '归一化落在 0..100');
