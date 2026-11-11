@@ -1,0 +1,10 @@
+{
+  "uuid": "edgegesture-selftest@gnome-edge-gesture",
+  "name": "Edge Gesture Selftest",
+  "description": "仅在 headless 测试会话里用：注入虚拟指针事件验证手势链路。",
+  "shell-version": [
+    "49",
+    "50"
+  ],
+  "version": 1
+}
