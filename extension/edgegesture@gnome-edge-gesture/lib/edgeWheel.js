@@ -5,6 +5,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {BrightnessControl} from './brightness.js';
 import {VolumeControl} from './volume.js';
 import * as Log from './logger.js';
+import {zoneAt} from './zones.js';
 
 /**
  * 滚轮方向 + 幅度 -> 带符号的步进量。
@@ -31,8 +32,9 @@ const FLUSH_MS = 16;
  * 为什么不用 stage 的 captured-event：真实会话里滚轮直接转发给指针下的
  * 客户端窗口，根本不经过 shell 的 stage，扩展收不到。
  *
- * 副作用：窗口仍会收到这次滚动（只观察不拦截）。边缘 28px 内大多是
- * 窗口边框或桌面，实际无感。
+ * 谁来拦：边缘带内的滚轮由 lib/inputGuard.js 的拦截器在核层吞掉
+ * （EVIOCGRAB + uinput 重新注入），窗口收不到。拦截器不可用时退回
+ * 「只观察不拦截」，功能照常，只是窗口会跟着滚一下。
  */
 export class EdgeWheel {
     constructor(settings, geometry) {
@@ -129,8 +131,16 @@ export class EdgeWheel {
         if (delta === 0)
             return;
 
-        Log.info('边缘滚轮 ' + target + ' ' + dir + ' 幅度=' + notches.toFixed(2) +
-            ' -> delta=' + delta.toFixed(3));
+        // 日志节流：每格一条 INFO 在连续滚动时是 25 行/秒的写盘，
+        // 诊断价值却等于零。1 秒留一条，其余降到 DEBUG。
+        if (now - (this._lastLogMs ?? 0) > 1000) {
+            this._lastLogMs = now;
+            Log.info('边缘滚轮 ' + target + ' ' + dir + ' 幅度=' + notches.toFixed(2) +
+                ' -> delta=' + delta.toFixed(3));
+        } else {
+            Log.debug('边缘滚轮 ' + target + ' ' + dir + ' 幅度=' + notches.toFixed(2) +
+                ' -> delta=' + delta.toFixed(3));
+        }
 
         if (target === 'brightness')
             this._brightness?.nudge(delta);
@@ -138,20 +148,8 @@ export class EdgeWheel {
             this._volume?.nudge(delta);
     }
 
-    /** 指针落在哪条边（四角归最近的边），没有则 null。 */
+    /** 指针落在哪条边（四角归最近的边），没有则 null。几何判定见 zones.js。 */
     _zoneAt(x, y) {
-        const margin = this._cfg.edge.margin ?? 28;
-        for (const m of this._geometry().monitors) {
-            if (x < m.x || x >= m.x + m.w || y < m.y || y >= m.y + m.h)
-                continue;
-            const cands = [
-                [x - m.x, 'left'],
-                [m.x + m.w - x, 'right'],
-                [y - m.y, 'top'],
-                [m.y + m.h - y, 'bottom'],
-            ].filter(([d]) => d <= margin).sort((a, b) => a[0] - b[0]);
-            return cands[0]?.[1] ?? null;
-        }
-        return null;
+        return zoneAt(this._geometry().monitors, x, y, this._cfg.edge.margin ?? 28);
     }
 }

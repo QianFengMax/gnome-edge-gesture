@@ -21,6 +21,14 @@ else
 fi
 
 echo
+if [ -x "$ROOT/bin/edgegesture-input" ]; then
+  echo "边缘拦截器：已编译 ✓（边缘滚轮不会传给窗口）"
+else
+  echo "边缘拦截器：未编译 ✗ —— 边缘滚轮会同时滚一下窗口"
+  echo "  编译：./scripts/build-inputguard.sh"
+fi
+
+echo
 echo "OCR 后端："
 echo "  python: $ROOT/.venv/bin/python3"
 echo "  script: $ROOT/backend/ocr_cli.py"

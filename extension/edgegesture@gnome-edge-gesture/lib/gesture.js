@@ -56,6 +56,11 @@ export class GestureEngine {
         this._buttonDown = false;
     }
 
+    /** idle | armed | drawing；外部用来判断「现在不该扣押设备」。 */
+    get state() {
+        return this._state;
+    }
+
     get _active() {
         if (!this._cfg.gesture.enabled || Main.overview.visible)
             return false;
@@ -104,6 +109,10 @@ export class GestureEngine {
         }
     }
 
+    /**
+     * @param {number} dx @param {number} dy evdev 增量；拦截期间没有增量
+     *   可读（物理设备被独占），传 (0,0) 即可 —— 位置一律从合成器取。
+     */
     onMotion(dx, dy) {
         if (this._state === 'idle')
             return;

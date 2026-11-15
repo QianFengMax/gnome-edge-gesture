@@ -1,5 +1,6 @@
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
+import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
@@ -29,17 +30,141 @@ const NEEDS = {
 
 const LANGS = [['自动', 'auto'], ['中文', 'chs'], ['英文', 'eng']];
 
+/**
+ * 挑一个当前图标主题真的有的图标名。
+ *
+ * 不同发行版/自装主题的图标集不一样，写死一个名字在别人的机器上
+ * 可能渲染成空白方块。这里按优先级取第一个存在的。
+ *
+ * @param {string[]} names 候选名，从最想要的开始
+ * @returns {string} 可用的名字；全都没有时返回第一个（至少语义对）
+ */
+function pickIcon(names) {
+    try {
+        const display = Gdk.Display.get_default();
+        if (display) {
+            const theme = Gtk.IconTheme.get_for_display(display);
+            for (const n of names) {
+                if (theme.has_icon(n))
+                    return n;
+            }
+        }
+    } catch {
+        // 拿不到 display（极早期调用）就用第一个，别让设置页开不了
+    }
+    return names[0];
+}
+
 export default class EdgeGesturePrefs extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         this._dir = this.dir.get_path();
         this._syncing = false;
         this._saveId = 0;
+        this._dirty = false;
         const {config} = loadConfig(this._dir);
         this._cfg = config;
 
         window.add(this._buildOcrPage());
         window.add(this._buildGeneralPage());
         window.set_default_size(620, 720);
+
+        this._window = window;
+        this._buildApplyBar(window);
+
+        /*
+         * 关窗时把待写的改动落盘。
+         *
+         * _onChange 是 500ms 防抖（输入框逐字符触发，不攒一下会疯狂写盘），
+         * 而「填完最后一个字符就点关闭」是常态：定时器还没到，改动就没了。
+         * 症状是「填了 key 却还走本地」，很难联想到是这个原因。
+         *
+         * 有了底部「应用」按钮后这是第二道保险：用户点应用立刻落盘，
+         * 直接关窗也照样存住。
+         */
+        window.connect('close-request', () => {
+            this._flushSave();
+            return false;
+        });
+    }
+
+    /**
+     * 底部固定操作条：状态文字 + 「应用」按钮。
+     *
+     * 为什么不放在页面里当普通行：页面能滚动，按钮滚出视野就找不到了，
+     * 用户会不知道改动到底存没存。这里挂到 PreferencesWindow 内部的
+     * ToolbarView 上，按钮永远贴在窗口最下方。
+     *
+     * 结构上要挑对那个 ToolbarView：窗口里有两个，外层装的是标题栏和
+     * 整个内容，内层第一个 child 是 Adw.ViewStack（页面切换器）。挂到
+     * 内层才是页面区域的最下方。
+     */
+    _buildApplyBar(window) {
+        const tv = this._findInnerToolbarView(window);
+        if (!tv) {
+            // 拿不到就退化成「只有 close-request 兜底」，不要因此让设置页打不开
+            console.warn('[edgegesture] 找不到 ToolbarView，应用按钮未添加');
+            return;
+        }
+
+        const bar = new Gtk.Box({
+            orientation: Gtk.Orientation.HORIZONTAL,
+            spacing: 12,
+        });
+        bar.set_margin_top(8);
+        bar.set_margin_bottom(8);
+        bar.set_margin_start(12);
+        bar.set_margin_end(12);
+
+        this._barStatus = new Gtk.Label({
+            label: '没有未保存的改动',
+            xalign: 0,
+            hexpand: true,
+            ellipsize: 3,   // Pango.EllipsizeMode.END
+        });
+        this._barStatus.add_css_class('dim-label');
+        bar.append(this._barStatus);
+
+        this._applyBtn = new Gtk.Button({label: '应用'});
+        this._applyBtn.add_css_class('suggested-action');
+        this._applyBtn.set_sensitive(false);   // 没有改动时不可点，状态一眼可见
+        this._applyBtn.connect('clicked', () => this._flushSave(true));
+        bar.append(this._applyBtn);
+
+        tv.add_bottom_bar(bar);
+    }
+
+    /** 在窗口子树里找「第一个 child 是 ViewStack」的那个 ToolbarView。 */
+    _findInnerToolbarView(root) {
+        const found = [];
+        const walk = w => {
+            if (w instanceof Adw.ToolbarView)
+                found.push(w);
+            let c = w.get_first_child();
+            while (c) {
+                walk(c);
+                c = c.get_next_sibling();
+            }
+        };
+        walk(root);
+
+        for (const tv of found) {
+            let c = tv.get_first_child();
+            while (c) {
+                if (c instanceof Adw.ViewStack)
+                    return tv;
+                c = c.get_next_sibling();
+            }
+        }
+        return found.length ? found[found.length - 1] : null;
+    }
+
+    /** 立刻执行挂起的保存。没有待写改动时什么也不做。 */
+    _flushSave(fromButton = false) {
+        if (this._saveId) {
+            GLib.source_remove(this._saveId);
+            this._saveId = 0;
+        }
+        this._save(fromButton);
     }
 
     // ---------- OCR 页 ----------
@@ -76,12 +201,18 @@ export default class EdgeGesturePrefs extends ExtensionPreferences {
         this._providerRow.selected = pIdx;
         cloudGroup.add(this._providerRow);
 
-        this._keyRow = new Adw.EntryRow({title: 'API Key'});
-        this._keyRow.text = remote.apiKey ?? '';
+        /*
+         * API Key / Secret Key 默认遮成圆点，点右侧眼睛才显示明文。
+         *
+         * 为什么要自己接这一套：Adw.PasswordEntryRow 在 libadwaita 1.10 里
+         * 并没有 peek（小眼睛）图标，只有 show-apply-button。所以用普通
+         * EntryRow，拿 get_delegate() 到内部的 Gtk.Text 改 visibility，
+         * 再往行尾塞一个 ToggleButton 当眼睛。
+         */
+        this._keyRow = this._secretEntry('API Key', remote.apiKey ?? '');
         cloudGroup.add(this._keyRow);
 
-        this._secretRow = new Adw.EntryRow({title: 'Secret Key'});
-        this._secretRow.text = remote.secretKey ?? '';
+        this._secretRow = this._secretEntry('Secret Key', remote.secretKey ?? '');
         cloudGroup.add(this._secretRow);
 
         this._urlRow = new Adw.EntryRow({title: '接口地址'});
@@ -168,6 +299,69 @@ export default class EdgeGesturePrefs extends ExtensionPreferences {
         return page;
     }
 
+    /**
+     * 造一个「默认密文、可点眼睛看明文」的输入行。
+     *
+     * @param {string} title 行标题
+     * @param {string} value 初始值
+     * @returns {Adw.EntryRow} 带着 _revealBtn / _setRevealed 的行
+     *
+     * 实现要点：
+     *  - Adw.EntryRow 是 Gtk.ListBoxRow 包装，真正的输入框是它内部的
+     *    Gtk.Text，用 get_delegate() 拿。给 EntryRow 本身设 visibility 没用。
+     *  - invisible_char 用 U+2022（•）。默认是 *，与 GNOME 习惯不符。
+     *  - 眼睛按钮用 ToggleButton 而不是 Button：想让它有「按下」的选中态，
+     *    并且能被键盘切（Tab 到、空格按）。
+     *  - 图标只在构建时设一次，切换时改的是 pressed 与文件名，不重建控件。
+     */
+    _secretEntry(title, value) {
+        const row = new Adw.EntryRow({title});
+        row.text = value ?? '';
+
+        const text = row.get_delegate();
+        if (text) {
+            text.set_visibility(false);
+            // 这个参数语义上是 gunichar，但 GJS 绑定要求传字符串：
+            // 传 '•'.codePointAt(0) 会报 "Expected type string for argument 'ch'"
+            text.set_invisible_char('•');
+            // 告诉输入法这是密码，别在预测栏里把明文显示出来
+            if (Gtk.InputPurpose)
+                text.set_input_purpose(Gtk.InputPurpose.PASSWORD);
+        }
+
+        /*
+         * 图标名优先用 GTK 的标准 reveal/conceal（含义就是显示/隐藏，
+         * 各图标主题都保证有），老主题没有时退回 eye-* 系列。
+         * 直接写死 eye-* 在部分主题下会渲染成空白方块。
+         */
+        const hiddenIcon = pickIcon(['view-reveal-symbolic',
+            'eye-not-looking-symbolic', 'dialog-password-symbolic']);
+        const shownIcon = pickIcon(['view-conceal-symbolic',
+            'eye-open-negative-filled-symbolic', 'dialog-password-symbolic']);
+
+        const eye = new Gtk.ToggleButton({
+            icon_name: hiddenIcon,
+            valign: Gtk.Align.CENTER,
+            tooltip_text: '显示',
+        });
+        eye.add_css_class('flat');
+        // 不要让眼睛按钮抢走行的「激活」语义
+        eye.set_can_focus(true);
+        eye.connect('toggled', () => {
+            const on = eye.get_active();
+            const t = row.get_delegate();
+            if (t)
+                t.set_visibility(on);
+            eye.set_icon_name(on ? shownIcon : hiddenIcon);
+            eye.set_tooltip_text(on ? '隐藏' : '显示');
+        });
+        row.add_suffix(eye);
+
+        // 测试与外部代码用得到
+        row._revealBtn = eye;
+        return row;
+    }
+
     // ---------- 通用页 ----------
 
     _buildGeneralPage() {
@@ -175,6 +369,31 @@ export default class EdgeGesturePrefs extends ExtensionPreferences {
             title: '通用',
             icon_name: 'emblem-system-symbolic',
         });
+        const edgeGroup = new Adw.PreferencesGroup({
+            title: '边缘滚轮',
+            description: '指针贴屏幕边缘滚轮时调亮度/音量',
+        });
+        page.add(edgeGroup);
+
+        this._swallowRow = new Adw.SwitchRow({
+            title: '拦截边缘滚动',
+            subtitle: '打开后窗口不再跟着滚；需要 /dev/uinput 可写',
+            active: this._cfg.edge?.swallow ?? true,
+        });
+        this._swallowRow.connect('notify::active', () => this._onChange());
+        edgeGroup.add(this._swallowRow);
+
+        this._armRow = new Adw.SpinRow({
+            title: '提前拦截余量（像素）',
+            subtitle: '越大越不容易漏拦，太大会误拦靠近边缘的正常滚动',
+            adjustment: new Gtk.Adjustment({
+                lower: 0, upper: 200, step_increment: 5, page_increment: 20,
+                value: this._cfg.edge?.armPad ?? 40,
+            }),
+        });
+        this._armRow.connect('notify::value', () => this._onChange());
+        edgeGroup.add(this._armRow);
+
         const g = new Adw.PreferencesGroup({title: '行为'});
         page.add(g);
 
@@ -217,6 +436,9 @@ export default class EdgeGesturePrefs extends ExtensionPreferences {
         this._langRow.visible = on;
         this._timeoutRow.visible = on;
 
+        if (this._armRow)
+            this._armRow.visible = this._swallowRow?.active ?? true;
+
         // 云端关掉时，本地后端至少留一个，否则整条链路为空
         this._rustRow.visible = this._fallbackOn.active;
         this._pyRow.visible = this._fallbackOn.active;
@@ -245,9 +467,22 @@ export default class EdgeGesturePrefs extends ExtensionPreferences {
             return GLib.SOURCE_REMOVE;
         });
         this._testRow.subtitle = '待保存…';
+        this._setDirty(true);
     }
 
-    _save() {
+    /** 底部操作条的状态：有未保存改动时「应用」可点。 */
+    _setDirty(dirty) {
+        this._dirty = dirty;
+        if (this._applyBtn)
+            this._applyBtn.set_sensitive(dirty);
+        if (this._barStatus) {
+            this._barStatus.set_text(dirty
+                ? '有未保存的改动'
+                : '没有未保存的改动');
+        }
+    }
+
+    _save(fromButton = false) {
         const provider = PROVIDERS[this._providerRow.selected]?.[1] ?? 'none';
 
         // 链路顺序即优先级：云端在前，本地在后
@@ -272,10 +507,24 @@ export default class EdgeGesturePrefs extends ExtensionPreferences {
         this._cfg.ocr.copyText = this._copyRow?.active ?? true;
         this._cfg.debug = this._debugRow?.active ?? false;
 
+        this._cfg.edge = this._cfg.edge ?? {};
+        this._cfg.edge.swallow = this._swallowRow?.active ?? true;
+        this._cfg.edge.armPad = Math.round(this._armRow?.value ?? 40);
+
         const r = saveConfig(this._dir, this._cfg);
         this._testRow.subtitle = r.ok
             ? '已保存：' + (chain.join(' → ') || '（空链路）')
             : '保存失败：' + r.error;
+
+        if (r.ok) {
+            this._setDirty(false);
+            if (fromButton && this._barStatus) {
+                const now = GLib.DateTime.new_now_local().format('%H:%M:%S');
+                this._barStatus.set_text('已应用到 config.json · ' + now);
+            }
+        } else if (this._barStatus) {
+            this._barStatus.set_text('保存失败：' + r.error);
+        }
     }
 
     async _runTest(btn) {

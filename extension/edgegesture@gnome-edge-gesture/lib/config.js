@@ -5,6 +5,11 @@ const DEFAULTS = {
     edge: {
         enabled: true,
         margin: 28,
+        // 拦截：边缘带内的滚轮是否在核层吞掉（不让当前窗口跟着滚）
+        swallow: true,
+        // 提前扣设备的余量（像素）。指针进 margin+armPad 就扣，
+        // 保证「滑到边缘立刻滚」那一下也拦得到。
+        armPad: 40,
         left: 'brightness',
         right: 'volume',
         top: 'none',

@@ -2,6 +2,8 @@
   "edge": {
     "enabled": true,
     "margin": 28,
+    "swallow": true,
+    "armPad": 40,
     "left": "brightness",
     "right": "volume",
     "top": "none",
@@ -23,11 +25,7 @@
     "templateActions": {}
   },
   "ocr": {
-    "chain": [
-      "remote",
-      "rust",
-      "python"
-    ],
+    "chain": ["remote", "rust", "python"],
     "remote": {
       "provider": "none",
       "apiKey": "",
