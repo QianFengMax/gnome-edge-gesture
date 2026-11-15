@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """OCR 命令行桥：PNG 进，纯文本出。
 
-在本机 aarch64 (SM8550) 上做的两处实测优化：
+在本机 aarch64 上做的两处实测优化：
 
 1. 检测阶段：RapidOCR 默认 limit_type=min 会把短边放大到 736。
    700x120 的细长图被撑成 4288x736，检测从 48ms 涨到 1128ms。
